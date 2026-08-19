@@ -39,8 +39,20 @@ nav = [
     ] },
     { "Libraries" = [
       "docs/libraries/index.md",
-      { "ComposeLens" = "docs/libraries/compose-lens/index.md" },
-      { "QuadletLens" = "docs/libraries/quadlet-lens/index.md" },
+      { "ComposeLens" = [
+        "docs/libraries/compose-lens/index.md",
+        { "Model" = "docs/libraries/compose-lens/model/index.md" },
+        { "Parsing and rendering" = "docs/libraries/compose-lens/parsing-rendering/index.md" },
+        { "Diagnostics" = "docs/libraries/compose-lens/diagnostics/index.md" },
+        { "Compatibility" = "docs/libraries/compose-lens/compatibility/index.md" },
+      ] },
+      { "QuadletLens" = [
+        "docs/libraries/quadlet-lens/index.md",
+        { "Model" = "docs/libraries/quadlet-lens/model/index.md" },
+        { "Parsing and rendering" = "docs/libraries/quadlet-lens/parsing-rendering/index.md" },
+        { "Diagnostics" = "docs/libraries/quadlet-lens/diagnostics/index.md" },
+        { "Compatibility" = "docs/libraries/quadlet-lens/compatibility/index.md" },
+      ] },
     ] },
     { "API" = "docs/api/index.md" },
     { "Development" = [

@@ -25,8 +25,8 @@ Run the same complete task required before a pull request:
 
 The task formats owned files, checks spelling, validates every supported file type, runs Python
 tests, regenerates token-derived brand assets, assembles the documentation, performs a strict
-Zensical build, checks required public routes and assets, and validates local links without
-contacting external web servers.
+Zensical build, generates first-party Lens Rustdoc, checks required public routes and assets, and
+validates local links without contacting external web servers.
 
 Brand direction, asset inventory, accessibility targets, and regeneration details are documented
 in [`brand.md`](brand.md).
@@ -38,6 +38,9 @@ Start a local preview after assembling content from the sibling repositories:
 ```console
 ./scripts/serve.sh
 ```
+
+Open `http://localhost:8000/`. The preview is a complete static build, including the generated Lens
+Rust API pages.
 
 The temporary documentation plan under `temp/` is deliberately excluded from Git and from the
 public build.
@@ -61,8 +64,10 @@ npm ci --ignore-scripts
 uv sync --locked
 uv run --frozen python scripts/assemble_docs.py --source-mode locked
 uv run --frozen zensical build --strict
+uv run --frozen python scripts/build_rustdoc.py --source-mode locked
 ```
 
 Locked assembly may access GitHub to obtain exact revisions declared in
 `documentation-sources.toml`. Normal local validation uses sibling checkouts and does not download
-documentation sources.
+documentation sources. Rustdoc reuses the same local or revision-verified source selected for the
+Markdown build.

@@ -20,6 +20,12 @@ the Zensical build.
 every source mapping, and records the exact pinned revisions without exposing local paths. Zensical
 then turns that staging tree into the ignored `site/` directory.
 
+After the strict Zensical build, `scripts/build_rustdoc.py` runs `cargo doc --locked --no-deps`
+against the same declared Lens sources. It copies each complete Rustdoc tree below its stable
+`/docs/api/<library>/` route and adds a small redirect to the generated crate index. Local mode uses
+the sibling checkout; locked mode verifies and reuses the exact checkout acquired during assembly.
+Generated Rustdoc remains ignored and is never copied back into a Lens repository.
+
 The brand build is deliberately smaller than the documentation assembler. Monochrome SVG originals
 and the design-token stylesheet are versioned sources. `scripts/generate_brand_assets.py` derives
 the committed dark, light, favicon, and social-preview variants and fails in check mode when any
@@ -57,5 +63,6 @@ repositories. Generated metadata contains repository URLs and pinned revisions o
 contains checkout paths, environment values, credentials, or source-control authentication.
 
 Public BoxFerry pages also pass a small content contract: one level-one heading, no placeholder
-copy, at most 900 words per page, and no prose paragraph above 120 words. These limits prevent
-reference dumps and generated filler; they are not targets to fill.
+copy, at most 900 words per page, and no prose paragraph above 120 words. Each Lens repository
+enforces a smaller exact public-page inventory before the website can assemble it. These limits
+prevent reference dumps and generated filler; they are not targets to fill.

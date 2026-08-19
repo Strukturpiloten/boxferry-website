@@ -138,6 +138,51 @@ class RepositoryPolicyTests(unittest.TestCase):
             with self.subTest(expected=expected):
                 self.assertIn(expected, assembler)
 
+    def test_lenses_own_library_pages_and_first_party_rustdoc(self) -> None:
+        with (ROOT / "documentation-sources.toml").open("rb") as handle:
+            repositories = tomllib.load(handle)["repositories"]
+
+        compose = next(
+            repository for repository in repositories if repository["name"] == "compose-lens"
+        )
+        quadlet = next(
+            repository for repository in repositories if repository["name"] == "quadlet-lens"
+        )
+        self.assertEqual(
+            compose["documents"],
+            [{"source": "docs/public", "destination": "docs/libraries/compose-lens"}],
+        )
+        self.assertEqual(
+            compose["rustdoc"],
+            {
+                "package": "compose-lens",
+                "crate": "compose_lens",
+                "destination": "docs/api/compose-lens",
+            },
+        )
+        self.assertEqual(
+            quadlet["documents"],
+            [
+                {"source": "docs/public", "destination": "docs/libraries/quadlet-lens"},
+                {
+                    "source": "catalogue/v1/podman-supported-range.toml",
+                    "destination": (
+                        "docs/libraries/quadlet-lens/catalogue/v1/podman-supported-range.toml"
+                    ),
+                },
+            ],
+        )
+        self.assertEqual(
+            quadlet["rustdoc"],
+            {
+                "package": "quadlet-lens",
+                "crate": "quadlet_lens",
+                "destination": "docs/api/quadlet-lens",
+            },
+        )
+        self.assertFalse((ROOT / "content" / "docs" / "libraries" / "compose-lens").exists())
+        self.assertFalse((ROOT / "content" / "docs" / "libraries" / "quadlet-lens").exists())
+
     def test_company_and_legal_links_are_explicit_and_first_party(self) -> None:
         with (ROOT / "zensical.toml").open("rb") as handle:
             extra = tomllib.load(handle)["project"]["extra"]
@@ -296,7 +341,9 @@ class RepositoryPolicyTests(unittest.TestCase):
             "unittest discover",
             "assemble_docs.py",
             "zensical build",
+            "build_rustdoc.py",
             "verify_site.py",
+            '[[ -f "${markdown_file}" ]]',
             "lychee",
         ):
             with self.subTest(expected=expected):

@@ -26,6 +26,6 @@ The supported toolchain and repository architecture are documented in
 
 ## Status
 
-The site assembles concise BoxFerry user documentation, checks its published CLI examples, and
-generates stable diagnostic-rule pages. Lens content and production deployment remain later
-milestones.
+The site assembles concise BoxFerry and Lens documentation, checks published CLI examples,
+generates stable diagnostic-rule pages, and publishes first-party Lens Rust API documentation.
+Production deployment remains a later milestone.
