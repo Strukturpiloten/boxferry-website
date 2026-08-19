@@ -46,6 +46,13 @@ uv run --frozen python scripts/generate_brand_assets.py --check
 
 The normal complete repository task already generates or checks these files.
 
+## Company mark
+
+The header uses `overrides/.icons/strukturpiloten/rocket.svg`, a compact monochrome reconstruction
+of the Strukturpiloten favicon. It is a separate company mark rather than part of the BoxFerry logo
+system. Keeping it inline and colored with `currentColor` avoids a remote request and preserves
+legibility in both site themes.
+
 ## Design tokens
 
 `tokens.css` is the only source for literal production colors. It also defines system-font stacks,

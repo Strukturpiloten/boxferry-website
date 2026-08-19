@@ -20,6 +20,12 @@ and the design-token stylesheet are versioned sources. `scripts/generate_brand_a
 the committed dark, light, favicon, and social-preview variants and fails in check mode when any
 variant is missing or stale.
 
+Small Zensical partial overrides own the shared header and footer integrations. They add local,
+passive GitHub and Strukturpiloten marks, English website-owned legal pages, and a first-party
+company contact link without loading remote images, scripts, fonts, or tracking resources. The
+Strukturpiloten rocket is a monochrome vector reconstruction of the company favicon and inherits
+the active color scheme.
+
 Local preview mode selects an explicitly declared sibling-checkout location so documentation
 authors can preview uncommitted work on the host or in the shared Dev Container. Locked mode
 obtains exact source revisions and is the only mode permitted for production builds.
@@ -32,6 +38,7 @@ obtains exact source revisions and is the only mode permitted for production bui
 - Generated API documentation starts below `/docs/api/`.
 - Site output is static and does not require application code on the webserver.
 - Brand assets require no remote font, browser script, or runtime color transformation.
+- Company and legal links remain visible on every generated page.
 
 ## Security and privacy
 

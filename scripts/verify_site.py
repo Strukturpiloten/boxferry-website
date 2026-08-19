@@ -10,6 +10,8 @@ from pathlib import Path
 
 REQUIRED_ROUTES = (
     "index.html",
+    "legal-notice/index.html",
+    "privacy-policy/index.html",
     "docs/index.html",
     "docs/getting-started/index.html",
     "docs/guides/index.html",
@@ -33,6 +35,13 @@ REQUIRED_ASSETS = (
     "assets/images/brand/generated/boxferry-wordmark-light.svg",
     "assets/images/brand/generated/boxferry-social-dark.svg",
     "assets/images/brand/generated/boxferry-social-light.svg",
+)
+REQUIRED_LINKS = (
+    "https://github.com/Strukturpiloten/boxferry",
+    "https://www.strukturpiloten.de/",
+    "./legal-notice/",
+    "./privacy-policy/",
+    "https://www.strukturpiloten.de/kontakt",
 )
 FORBIDDEN_FRAGMENTS = (
     "/home/",
@@ -60,6 +69,13 @@ def verify_site(site_directory: Path) -> None:
     if missing_assets:
         raise SiteVerificationError(
             f"required public assets are missing: {', '.join(missing_assets)}"
+        )
+
+    homepage = (site / "index.html").read_text(encoding="utf-8")
+    missing_links = [link for link in REQUIRED_LINKS if f'href="{link}"' not in homepage]
+    if missing_links:
+        raise SiteVerificationError(
+            f"required public links are missing: {', '.join(missing_links)}"
         )
 
     metadata_path = site / "assets" / "data" / "documentation-sources.json"

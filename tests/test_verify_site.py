@@ -7,7 +7,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.verify_site import REQUIRED_ASSETS, REQUIRED_ROUTES, SiteVerificationError, verify_site
+from scripts.verify_site import (
+    REQUIRED_ASSETS,
+    REQUIRED_LINKS,
+    REQUIRED_ROUTES,
+    SiteVerificationError,
+    verify_site,
+)
 
 
 class SiteVerificationTests(unittest.TestCase):
@@ -20,7 +26,8 @@ class SiteVerificationTests(unittest.TestCase):
         for route in REQUIRED_ROUTES:
             path = self.site / route
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text("<!doctype html><title>BoxFerry</title>\n", encoding="utf-8")
+            links = "".join(f'<a href="{link}"></a>' for link in REQUIRED_LINKS)
+            path.write_text(f"<!doctype html><title>BoxFerry</title>{links}\n", encoding="utf-8")
         for asset in REQUIRED_ASSETS:
             path = self.site / asset
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -56,8 +63,22 @@ class SiteVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(SiteVerificationError, "required public assets are missing"):
             verify_site(self.site)
 
+    def test_missing_required_link_fails(self) -> None:
+        homepage = self.site / "index.html"
+        homepage.write_text(
+            homepage.read_text(encoding="utf-8").replace(REQUIRED_LINKS[-1], ""),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(SiteVerificationError, "required public links are missing"):
+            verify_site(self.site)
+
     def test_host_path_disclosure_fails(self) -> None:
-        (self.site / "index.html").write_text("/workspaces/private/source", encoding="utf-8")
+        homepage = self.site / "index.html"
+        homepage.write_text(
+            f"{homepage.read_text(encoding='utf-8')}/workspaces/private/source",
+            encoding="utf-8",
+        )
 
         with self.assertRaisesRegex(SiteVerificationError, "forbidden path fragment"):
             verify_site(self.site)
