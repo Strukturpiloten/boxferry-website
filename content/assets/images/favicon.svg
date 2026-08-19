@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BoxFerry">
+  <path
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="6"
+    d="M12 14h27a10 10 0 0 1 0 20H12V14Zm0 20h31a10 10 0 0 1 0 20H12V34Zm12-20v40"
+  />
+</svg>

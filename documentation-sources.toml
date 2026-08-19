@@ -1,0 +1,23 @@
+schema-version = 1
+
+[site]
+content-directory = "content"
+staging-directory = ".generated/docs"
+
+[[repositories]]
+name = "boxferry"
+repository = "https://github.com/Strukturpiloten/boxferry.git"
+revision = "e7763dcce66686737cd605ac3cdf7213390a959e"
+local-directories = ["../boxferry", "../.."]
+
+[[repositories]]
+name = "compose-lens"
+repository = "https://github.com/Strukturpiloten/compose-lens.git"
+revision = "04bb90ca1200a3fdb2e4685d465eac124bdcb255"
+local-directories = ["../compose-lens"]
+
+[[repositories]]
+name = "quadlet-lens"
+repository = "https://github.com/Strukturpiloten/quadlet-lens.git"
+revision = "a0633f03d53fd5512c513ef1c730f3ac5f3e1c97"
+local-directories = ["../quadlet-lens"]

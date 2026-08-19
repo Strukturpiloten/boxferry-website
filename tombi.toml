@@ -1,0 +1,19 @@
+toml-version = "v1.0.0"
+
+[files]
+include = ["**/*.toml"]
+respect-ignore-files = true
+
+[format.rules]
+line-ending = "lf"
+
+[lint.rules]
+dotted-keys-out-of-order = "error"
+key-empty = "error"
+tables-out-of-order = "error"
+
+[[overrides]]
+files.include = ["documentation-sources.toml"]
+
+[overrides.lint.rules]
+tables-out-of-order = "off"
