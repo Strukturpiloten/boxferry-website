@@ -26,5 +26,6 @@ The supported toolchain and repository architecture are documented in
 
 ## Status
 
-The repository currently implements the documentation-foundation milestone. Public content and
-the final BoxFerry visual identity will be developed in subsequent milestones.
+The repository implements the documentation foundation and the production BoxFerry visual
+identity. Executable examples and the substantive BoxFerry and Lens documentation rewrites are the
+next milestones.

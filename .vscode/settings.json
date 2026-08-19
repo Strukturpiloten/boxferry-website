@@ -1,4 +1,5 @@
 {
+  "cSpell.configFile": "${workspaceFolder}/cspell.json",
   "editor.formatOnSave": true,
   "files.watcherExclude": {
     "**/.generated/**": true,

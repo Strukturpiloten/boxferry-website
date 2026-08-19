@@ -42,6 +42,7 @@ nav = [
 
 [project.theme]
 favicon = "assets/images/favicon.svg"
+logo = "assets/images/brand/generated/boxferry-mark-dark.svg"
 features = [
   "content.code.copy",
   "navigation.instant",

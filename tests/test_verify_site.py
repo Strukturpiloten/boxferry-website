@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.verify_site import REQUIRED_ROUTES, SiteVerificationError, verify_site
+from scripts.verify_site import REQUIRED_ASSETS, REQUIRED_ROUTES, SiteVerificationError, verify_site
 
 
 class SiteVerificationTests(unittest.TestCase):
@@ -21,6 +21,10 @@ class SiteVerificationTests(unittest.TestCase):
             path = self.site / route
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("<!doctype html><title>BoxFerry</title>\n", encoding="utf-8")
+        for asset in REQUIRED_ASSETS:
+            path = self.site / asset
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('<svg xmlns="http://www.w3.org/2000/svg" />\n', encoding="utf-8")
         metadata = self.site / "assets" / "data" / "documentation-sources.json"
         metadata.parent.mkdir(parents=True)
         metadata.write_text(
@@ -44,6 +48,12 @@ class SiteVerificationTests(unittest.TestCase):
         (self.site / REQUIRED_ROUTES[-1]).unlink()
 
         with self.assertRaisesRegex(SiteVerificationError, "required public routes are missing"):
+            verify_site(self.site)
+
+    def test_missing_brand_asset_fails(self) -> None:
+        (self.site / REQUIRED_ASSETS[-1]).unlink()
+
+        with self.assertRaisesRegex(SiteVerificationError, "required public assets are missing"):
             verify_site(self.site)
 
     def test_host_path_disclosure_fails(self) -> None:

@@ -1,10 +1,44 @@
-:root,
+:root {
+  --bf-font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bf-font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --bf-font-size-small: 0.875rem;
+  --bf-font-size-body: 1rem;
+  --bf-font-size-lead: 1.25rem;
+  --bf-line-height-tight: 1.05;
+  --bf-line-height-body: 1.6;
+  --bf-space-1: 0.25rem;
+  --bf-space-2: 0.5rem;
+  --bf-space-3: 0.75rem;
+  --bf-space-4: 1rem;
+  --bf-space-5: 1.5rem;
+  --bf-space-6: 2rem;
+  --bf-space-7: 3rem;
+  --bf-space-8: 4rem;
+  --bf-space-9: 6rem;
+  --bf-radius-small: 0.5rem;
+  --bf-radius-medium: 0.75rem;
+  --bf-radius-large: 1rem;
+  --bf-radius-pill: 100rem;
+  --bf-icon-small: 1rem;
+  --bf-icon-medium: 1.5rem;
+  --bf-icon-large: 3rem;
+  --bf-motion-none: 0.01ms;
+  --bf-motion-fast: 120ms;
+  --bf-motion-standard: 220ms;
+  --bf-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --bf-shadow-raised: 0 1rem 3rem var(--bf-shadow);
+  --md-text-font: var(--bf-font-sans);
+  --md-code-font: var(--bf-font-mono);
+}
+
 [data-md-color-scheme="slate"] {
   color-scheme: dark;
   --bf-brand-primary: #5aa9ff;
-  --bf-brand-primary-strong: #2388f5;
+  --bf-brand-primary-strong: #0967b8;
   --bf-brand-secondary: #71d1c2;
   --bf-brand-accent: #ffb454;
+  --bf-on-brand: #ffffff;
   --bf-background: #090e18;
   --bf-surface: #111a2a;
   --bf-surface-raised: #17243a;
@@ -30,6 +64,7 @@
   --bf-brand-primary-strong: #0f5b9f;
   --bf-brand-secondary: #187c70;
   --bf-brand-accent: #a95700;
+  --bf-on-brand: #ffffff;
   --bf-background: #f6f8fb;
   --bf-surface: #ffffff;
   --bf-surface-raised: #eef3f8;

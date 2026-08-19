@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-labelledby="title">
+  <title id="title">BoxFerry wordmark</title>
+  <g aria-hidden="true">
+    <rect
+      class="bf-logo-primary"
+      x="8"
+      y="9"
+      width="48"
+      height="35"
+      rx="6"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="3.5"
+    />
+    <path
+      class="bf-logo-primary"
+      d="M8 44h48l-7 10H15L8 44Z"
+      fill="none"
+      stroke="currentColor"
+      stroke-linejoin="round"
+      stroke-width="3.5"
+    />
+    <path
+      class="bf-logo-secondary"
+      d="M16 20c12 0 20 14 32 14M16 34c12 0 20-14 32-14"
+      fill="none"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-width="3"
+    />
+    <g class="bf-logo-accent" fill="currentColor">
+      <circle cx="16" cy="20" r="3.5" />
+      <circle cx="16" cy="34" r="3.5" />
+      <circle cx="48" cy="20" r="3.5" />
+      <circle cx="48" cy="34" r="3.5" />
+    </g>
+  </g>
+  <text
+    class="bf-logo-word"
+    x="75"
+    y="44"
+    fill="currentColor"
+    font-family="ui-sans-serif, system-ui, sans-serif"
+    font-size="42"
+    font-weight="750"
+    letter-spacing="-1.5"
+  >
+    BoxFerry
+  </text>
+</svg>

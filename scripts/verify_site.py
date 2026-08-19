@@ -23,6 +23,17 @@ REQUIRED_ROUTES = (
     "docs/api/index.html",
     "docs/development/index.html",
 )
+REQUIRED_ASSETS = (
+    "assets/images/favicon.svg",
+    "assets/images/brand/boxferry-mark.svg",
+    "assets/images/brand/boxferry-wordmark.svg",
+    "assets/images/brand/generated/boxferry-mark-dark.svg",
+    "assets/images/brand/generated/boxferry-mark-light.svg",
+    "assets/images/brand/generated/boxferry-wordmark-dark.svg",
+    "assets/images/brand/generated/boxferry-wordmark-light.svg",
+    "assets/images/brand/generated/boxferry-social-dark.svg",
+    "assets/images/brand/generated/boxferry-social-light.svg",
+)
 FORBIDDEN_FRAGMENTS = (
     "/home/",
     "/workspaces/",
@@ -45,6 +56,12 @@ def verify_site(site_directory: Path) -> None:
     if missing:
         raise SiteVerificationError(f"required public routes are missing: {', '.join(missing)}")
 
+    missing_assets = [asset for asset in REQUIRED_ASSETS if not (site / asset).is_file()]
+    if missing_assets:
+        raise SiteVerificationError(
+            f"required public assets are missing: {', '.join(missing_assets)}"
+        )
+
     metadata_path = site / "assets" / "data" / "documentation-sources.json"
     try:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -63,7 +80,14 @@ def verify_site(site_directory: Path) -> None:
             raise SiteVerificationError(
                 f"built site contains a symbolic link: {path.relative_to(site)}"
             )
-        if not path.is_file() or path.suffix not in {".css", ".html", ".js", ".json", ".txt"}:
+        if not path.is_file() or path.suffix not in {
+            ".css",
+            ".html",
+            ".js",
+            ".json",
+            ".svg",
+            ".txt",
+        }:
             continue
         content = path.read_text(encoding="utf-8", errors="replace")
         for fragment in FORBIDDEN_FRAGMENTS:

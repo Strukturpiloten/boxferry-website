@@ -4,11 +4,7 @@
     .bf-logo-primary { color: #5aa9ff; }
     .bf-logo-secondary { color: #71d1c2; }
     .bf-logo-accent { color: #ffb454; }
-    @media (prefers-color-scheme: light) {
-      .bf-logo-primary { color: #176fc1; }
-      .bf-logo-secondary { color: #187c70; }
-      .bf-logo-accent { color: #a95700; }
-    }
+    .bf-logo-word { color: #f4f7fb; }
   </style>
   <rect
     class="bf-logo-primary"

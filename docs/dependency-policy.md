@@ -9,6 +9,7 @@ Dependencies must have a direct, documented purpose and be locked to reproducibl
 | Zensical          | 0.0.56  | MIT               | Static site generation, navigation, search, theming, strict link validation | Accepted while pre-1.0; exact pin and Renovate review required |
 | uv                | 0.12.5  | Apache-2.0 OR MIT | Python environment and lock-file management                                 | Accepted; exact tool requirement and immutable container image |
 | Ruff              | 0.16.3  | MIT               | Python formatting and linting                                               | Accepted for repository tooling only                           |
+| CSpell            | 10.0.1  | MIT               | Repository spelling validation                                              | Shared editor and deterministic CI configuration               |
 | Prettier          | 3.9.6   | MIT               | Markdown, JSON, YAML, CSS, and HTML formatting                              | Shared with the other BoxFerry repositories                    |
 | markdownlint-cli2 | 0.23.2  | MIT               | Markdown linting                                                            | Shared with the other BoxFerry repositories                    |
 | Tombi             | 1.4.0   | MIT               | TOML formatting and linting                                                 | Shared with the other BoxFerry repositories                    |

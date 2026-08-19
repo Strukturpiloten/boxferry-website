@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Ferry wake logo direction</title>
+  <path d="M12 16h40l-5 23H17L12 16Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4" />
+  <path d="M18 48c8-8 20-8 28 0M12 57c12-10 28-10 40 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4" />
+  <path d="M24 16v23M40 16v23" fill="none" stroke="currentColor" stroke-width="3" />
+</svg>
