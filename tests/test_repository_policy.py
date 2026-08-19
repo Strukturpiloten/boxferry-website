@@ -38,6 +38,28 @@ class RepositoryPolicyTests(unittest.TestCase):
         )
         self.assertEqual(configuration["tool"]["uv"]["required-version"], "==0.12.5")
 
+    def test_tombi_uses_an_offline_pyproject_schema(self) -> None:
+        with (ROOT / "tombi.toml").open("rb") as handle:
+            configuration = tomllib.load(handle)
+
+        pyproject_schemas = [
+            schema for schema in configuration["schemas"] if schema["include"] == ["pyproject.toml"]
+        ]
+        self.assertEqual(
+            pyproject_schemas,
+            [
+                {
+                    "include": ["pyproject.toml"],
+                    "path": "docs/schemas/tombi-pyproject-offline.schema.json",
+                }
+            ],
+        )
+
+        schema_path = ROOT / pyproject_schemas[0]["path"]
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        self.assertEqual(schema["type"], "object")
+        self.assertTrue(schema["additionalProperties"])
+
     def test_every_github_action_is_immutable_and_versioned(self) -> None:
         workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
         self.assertTrue(workflows)
