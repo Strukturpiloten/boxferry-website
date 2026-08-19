@@ -18,6 +18,20 @@ SCHEMA_VERSION = 1
 REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 REPOSITORY_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]*")
 GITHUB_PREFIX = "https://github.com/Strukturpiloten/"
+RULE_CODE_PATTERN = re.compile(r"(?:BFC|BFQ|BFO)[0-9]{4}")
+RULE_NAME_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+EXAMPLE_ID_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+RULE_INDEX_MARKER = "<!-- boxferry-generated-rule-index -->"
+PUBLIC_PAGE_WORD_LIMIT = 900
+PUBLIC_PARAGRAPH_WORD_LIMIT = 120
+PLACEHOLDER_PHRASES = (
+    "coming soon",
+    "final guide will",
+    "placeholder",
+    "this guide will",
+    "this page will",
+    "this section will",
+)
 
 
 class AssemblyError(RuntimeError):
@@ -256,6 +270,230 @@ def _locked_checkout(manifest: Manifest, repository: RepositorySource) -> Path:
     return checkout
 
 
+def _single_line_string(table: dict[str, Any], key: str, label: str) -> str:
+    value = _required_string(table, key, label)
+    if "\n" in value or "\r" in value:
+        raise AssemblyError(f"{label}.{key} must stay on one line")
+    return value
+
+
+def _load_json_object(path: Path, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise AssemblyError(f"cannot read {label}: {error}") from error
+    return _required_mapping(value, label)
+
+
+def _generate_rule_reference(staging: Path) -> None:
+    rules_path = staging / "docs" / "reference" / "diagnostics" / "rules.json"
+    if not rules_path.exists():
+        return
+    catalogue = _load_json_object(rules_path, "diagnostic rule catalogue")
+    if catalogue.get("schema_version") != 1:
+        raise AssemblyError("diagnostic rule catalogue schema_version must be 1")
+    raw_rules = catalogue.get("rules")
+    if not isinstance(raw_rules, list) or not raw_rules:
+        raise AssemblyError("diagnostic rule catalogue must contain rules")
+
+    rules: list[dict[str, str]] = []
+    codes: set[str] = set()
+    names: set[str] = set()
+    for index, raw_rule in enumerate(raw_rules, start=1):
+        label = f"diagnostic rule catalogue rules[{index}]"
+        rule = _required_mapping(raw_rule, label)
+        values = {
+            key: _single_line_string(rule, key, label)
+            for key in ("code", "name", "default_severity", "description", "help", "owner")
+        }
+        if not RULE_CODE_PATTERN.fullmatch(values["code"]):
+            raise AssemblyError(f"{label}.code is not a BoxFerry rule code")
+        if not RULE_NAME_PATTERN.fullmatch(values["name"]):
+            raise AssemblyError(f"{label}.name is not a rule slug")
+        if values["code"] in codes or values["name"] in names:
+            raise AssemblyError(f"duplicate diagnostic rule code or name: {values['code']}")
+        codes.add(values["code"])
+        names.add(values["name"])
+        rules.append(values)
+
+    ordered_codes = [rule["code"] for rule in rules]
+    if ordered_codes != sorted(ordered_codes):
+        raise AssemblyError("diagnostic rule catalogue must be sorted by code")
+
+    index_path = staging / "docs" / "reference" / "diagnostics" / "index.md"
+    try:
+        index_text = index_path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise AssemblyError(f"cannot read diagnostic index: {error}") from error
+    if index_text.count(RULE_INDEX_MARKER) != 1:
+        raise AssemblyError("diagnostic index must contain one generated-rule marker")
+
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for rule in rules:
+        grouped.setdefault(rule["owner"], []).append(rule)
+    index_lines = [
+        "## Rule catalogue",
+        "",
+        "[Download the machine-readable catalogue](rules.json).",
+    ]
+    for owner, owner_rules in grouped.items():
+        index_lines.extend(("", f"### {owner}", ""))
+        index_lines.extend(
+            f"- [`{rule['code']}` — {rule['name']}](rules/{rule['code']}/)" for rule in owner_rules
+        )
+    index_path.write_text(
+        index_text.replace(RULE_INDEX_MARKER, "\n".join(index_lines)),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+    rule_root = index_path.parent / "rules"
+    if rule_root.exists():
+        raise AssemblyError("source documentation must not define generated rule pages")
+    for rule in rules:
+        page = rule_root / rule["code"] / "index.md"
+        page.parent.mkdir(parents=True)
+        page.write_text(
+            "\n".join(
+                (
+                    f"# {rule['code']}: {rule['name']}",
+                    "",
+                    f"**Severity:** `{rule['default_severity']}`  ",
+                    f"**Owner:** {rule['owner']}",
+                    "",
+                    rule["description"],
+                    "",
+                    "## Fix",
+                    "",
+                    rule["help"],
+                    "",
+                    "[Back to all diagnostic rules](../../)",
+                    "",
+                )
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+
+
+def _verify_documented_commands(staging: Path) -> None:
+    manifest_path = staging / "_data" / "documentation-examples.toml"
+    if not manifest_path.exists():
+        return
+    try:
+        with manifest_path.open("rb") as handle:
+            manifest = tomllib.load(handle)
+    except (OSError, tomllib.TOMLDecodeError) as error:
+        raise AssemblyError(f"cannot read documentation example manifest: {error}") from error
+    if manifest.get("schema") != 1:
+        raise AssemblyError("documentation example schema must be 1")
+    raw_examples = manifest.get("examples")
+    if not isinstance(raw_examples, list) or not raw_examples:
+        raise AssemblyError("documentation example manifest must contain examples")
+
+    identifiers: set[str] = set()
+    successful_routes: set[str] = set()
+    failing_routes: set[str] = set()
+    for index, raw_example in enumerate(raw_examples, start=1):
+        label = f"documentation examples[{index}]"
+        example = _required_mapping(raw_example, label)
+        identifier = _single_line_string(example, "id", label)
+        if not EXAMPLE_ID_PATTERN.fullmatch(identifier) or identifier in identifiers:
+            raise AssemblyError(f"{label}.id must be a unique lowercase slug")
+        identifiers.add(identifier)
+        command = _single_line_string(example, "command", label)
+        args = _required_string_list(example, "args", label)
+        if command != f"boxferry {' '.join(args)}":
+            raise AssemblyError(f"{label}.command must match its argument array")
+        pages = _required_string_list(example, "pages", label)
+        expected_exit = example.get("expected-exit")
+        if not isinstance(expected_exit, int) or isinstance(expected_exit, bool):
+            raise AssemblyError(f"{label}.expected-exit must be an integer")
+        block = f"<!-- boxferry-example: {identifier} -->\n\n```console\n{command}\n```"
+        for page_value in pages:
+            source_page = _safe_relative_path(page_value, f"{label}.pages")
+            if source_page.parts[:2] != ("docs", "public"):
+                raise AssemblyError(f"{label}.pages must stay below docs/public")
+            destination = staging.joinpath("docs", *source_page.parts[2:])
+            try:
+                page_text = destination.read_text(encoding="utf-8")
+            except OSError as error:
+                raise AssemblyError(
+                    f"cannot read documented command page: {destination}"
+                ) from error
+            if page_text.count(block) != 1:
+                raise AssemblyError(
+                    f"{destination} must contain one checked `{identifier}` command"
+                )
+
+        if len(args) >= 3 and args[0] == "convert":
+            route = f"{args[1]}->{args[2]}"
+            if expected_exit == 0:
+                successful_routes.add(route)
+            else:
+                failing_routes.add(route)
+
+    expected_routes = {
+        "compose->compose",
+        "compose->quadlet",
+        "quadlet->compose",
+        "quadlet->quadlet",
+    }
+    if successful_routes != expected_routes or failing_routes != expected_routes:
+        raise AssemblyError("every document route needs a checked successful and failing command")
+
+    manifest_path.unlink()
+    data_directory = manifest_path.parent
+    if not any(data_directory.iterdir()):
+        data_directory.rmdir()
+
+
+def _verify_public_content(staging: Path) -> None:
+    documentation_root = staging / "docs"
+    if not (documentation_root / "index.md").exists():
+        return
+    public_roots = (
+        documentation_root / "index.md",
+        documentation_root / "getting-started",
+        documentation_root / "guides",
+        documentation_root / "concepts",
+        documentation_root / "reference",
+        documentation_root / "development",
+    )
+    files: list[Path] = []
+    for root in public_roots:
+        if root.is_file():
+            files.append(root)
+        elif root.is_dir():
+            files.extend(sorted(root.rglob("*.md")))
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        relative = path.relative_to(staging)
+        if len(re.findall(r"(?u)\b[\w'-]+\b", text)) > PUBLIC_PAGE_WORD_LIMIT:
+            raise AssemblyError(f"public page exceeds {PUBLIC_PAGE_WORD_LIMIT} words: {relative}")
+        if sum(line.startswith("# ") for line in text.splitlines()) != 1:
+            raise AssemblyError(
+                f"public page must contain exactly one level-one heading: {relative}"
+            )
+        folded = text.casefold()
+        for phrase in PLACEHOLDER_PHRASES:
+            if phrase in folded:
+                raise AssemblyError(
+                    f"public page contains placeholder phrase `{phrase}`: {relative}"
+                )
+
+        without_code = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+        for paragraph in re.split(r"\n\s*\n", without_code):
+            stripped = paragraph.strip()
+            if not stripped or stripped.startswith(("#", "-", "|", "<")):
+                continue
+            words = re.findall(r"(?u)\b[\w'-]+\b", stripped)
+            if len(words) > PUBLIC_PARAGRAPH_WORD_LIMIT:
+                raise AssemblyError(
+                    f"public paragraph exceeds {PUBLIC_PARAGRAPH_WORD_LIMIT} words: {relative}"
+                )
+
+
 def assemble(manifest: Manifest, source_mode: str) -> Path:
     """Create a fresh documentation tree and return its staging path."""
     if source_mode not in {"local", "locked"}:
@@ -292,6 +530,10 @@ def assemble(manifest: Manifest, source_mode: str) -> Path:
             source = source_root.joinpath(*document.source.parts)
             destination = manifest.staging_directory.joinpath(*document.destination.parts)
             _copy_tree(source, destination)
+
+    _generate_rule_reference(manifest.staging_directory)
+    _verify_documented_commands(manifest.staging_directory)
+    _verify_public_content(manifest.staging_directory)
 
     metadata_path = manifest.staging_directory / "assets" / "data" / "documentation-sources.json"
     if metadata_path.exists():

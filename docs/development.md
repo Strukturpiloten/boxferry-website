@@ -42,6 +42,16 @@ Start a local preview after assembling content from the sibling repositories:
 The temporary documentation plan under `temp/` is deliberately excluded from Git and from the
 public build.
 
+## Author documentation
+
+Read [`content-guidelines.md`](content-guidelines.md) before adding a public page. Technical text
+and executable examples stay in the repository that owns the behavior. The website owns assembly,
+shared navigation, presentation, and generated rule pages.
+
+After changing a displayed BoxFerry command, update its entry in
+`boxferry/docs/documentation-examples.toml` and run BoxFerry's complete gate before updating the
+website revision pin.
+
 ## Clean checkout
 
 With Node.js 22 or newer and uv 0.12.5 installed:

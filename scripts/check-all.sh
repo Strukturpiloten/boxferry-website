@@ -102,8 +102,9 @@ run_step "Assemble documentation" uv run --frozen python scripts/assemble_docs.p
 run_step "Build the static site with warnings denied" uv run --frozen zensical build --clean --strict
 run_step "Verify public routes and privacy boundaries" uv run --frozen python scripts/verify_site.py
 
+# The homepage links to assembled documentation routes that exist only in the generated site.
 mapfile -d '' markdown_files < <(
-  git ls-files --cached --others --exclude-standard -z -- '*.md'
+  git ls-files --cached --others --exclude-standard -z -- '*.md' ':!content/index.md'
 )
 run_step "Check local source links" lychee --config lychee.toml --root-dir . --offline \
   "${markdown_files[@]}"

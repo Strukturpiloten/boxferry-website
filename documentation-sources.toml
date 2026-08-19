@@ -7,17 +7,45 @@ staging-directory = ".generated/docs"
 [[repositories]]
 name = "boxferry"
 repository = "https://github.com/Strukturpiloten/boxferry.git"
-revision = "e7763dcce66686737cd605ac3cdf7213390a959e"
+revision = "01e33d870c35c2eb58ad7ca2ce72b7ae2875659a"
 local-directories = ["../boxferry", "../.."]
+
+[[repositories.documents]]
+source = "docs/public/index.md"
+destination = "docs/index.md"
+
+[[repositories.documents]]
+source = "docs/public/getting-started"
+destination = "docs/getting-started"
+
+[[repositories.documents]]
+source = "docs/public/guides"
+destination = "docs/guides"
+
+[[repositories.documents]]
+source = "docs/public/concepts"
+destination = "docs/concepts"
+
+[[repositories.documents]]
+source = "docs/public/reference"
+destination = "docs/reference"
+
+[[repositories.documents]]
+source = "docs/public/development"
+destination = "docs/development"
+
+[[repositories.documents]]
+source = "docs/documentation-examples.toml"
+destination = "_data/documentation-examples.toml"
 
 [[repositories]]
 name = "compose-lens"
 repository = "https://github.com/Strukturpiloten/compose-lens.git"
-revision = "04bb90ca1200a3fdb2e4685d465eac124bdcb255"
+revision = "9bc38c71c0a452d8af63c692ab354be259b2a879"
 local-directories = ["../compose-lens"]
 
 [[repositories]]
 name = "quadlet-lens"
 repository = "https://github.com/Strukturpiloten/quadlet-lens.git"
-revision = "a0633f03d53fd5512c513ef1c730f3ac5f3e1c97"
+revision = "92ff067e0f717c3317e3d166a61b50c8d684fad9"
 local-directories = ["../quadlet-lens"]

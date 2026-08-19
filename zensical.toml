@@ -18,10 +18,16 @@ nav = [
     { "Getting started" = "docs/getting-started/index.md" },
     { "Guides" = [
       "docs/guides/index.md",
-      { "Compose to Compose" = "docs/guides/convert/compose-to-compose/index.md" },
-      { "Compose to Quadlet" = "docs/guides/convert/compose-to-quadlet/index.md" },
-      { "Quadlet to Compose" = "docs/guides/convert/quadlet-to-compose/index.md" },
-      { "Quadlet to Quadlet" = "docs/guides/convert/quadlet-to-quadlet/index.md" },
+      { "Compose input" = [
+        "docs/guides/compose-input/index.md",
+        { "Compose output" = "docs/guides/convert/compose-to-compose/index.md" },
+        { "Quadlet output" = "docs/guides/convert/compose-to-quadlet/index.md" },
+      ] },
+      { "Quadlet input" = [
+        "docs/guides/quadlet-input/index.md",
+        { "Compose output" = "docs/guides/convert/quadlet-to-compose/index.md" },
+        { "Quadlet output" = "docs/guides/convert/quadlet-to-quadlet/index.md" },
+      ] },
     ] },
     { "Concepts" = "docs/concepts/index.md" },
     { "Reference" = [
@@ -37,7 +43,14 @@ nav = [
       { "QuadletLens" = "docs/libraries/quadlet-lens/index.md" },
     ] },
     { "API" = "docs/api/index.md" },
-    { "Development" = "docs/development/index.md" },
+    { "Development" = [
+      "docs/development/index.md",
+      { "Architecture" = "docs/development/architecture/index.md" },
+      { "Rust API" = "docs/development/rust-api/index.md" },
+      { "Testing" = "docs/development/testing/index.md" },
+      { "Contributing" = "docs/development/contributing/index.md" },
+      { "Releases" = "docs/development/releases/index.md" },
+    ] },
   ] },
   { "Legal" = [
     { "Legal Notice" = "legal-notice/index.md" },
@@ -52,6 +65,7 @@ favicon = "assets/images/favicon.svg"
 logo = "assets/images/brand/generated/boxferry-mark-dark.svg"
 features = [
   "content.code.copy",
+  "navigation.indexes",
   "navigation.instant",
   "navigation.instant.progress",
   "navigation.sections",

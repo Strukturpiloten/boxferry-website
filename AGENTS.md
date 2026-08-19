@@ -37,6 +37,7 @@ If a change contradicts an accepted decision, update or supersede it in the same
 - Keep all literal color values in `content/assets/stylesheets/tokens.css`.
 - Default to dark mode while retaining a user-selectable light mode.
 - Treat Zensical warnings as build failures.
+- Start every repository-owned complete YAML document with `---`.
 - Pin every GitHub Action to its full commit SHA and append its exact release tag as a comment.
 
 ## Canonical development commands

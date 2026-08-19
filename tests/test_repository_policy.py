@@ -29,6 +29,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(project["repo_url"], "https://github.com/Strukturpiloten/boxferry")
         self.assertEqual(project["theme"]["palette"][0]["scheme"], "slate")
         self.assertEqual(project["theme"]["palette"][1]["scheme"], "default")
+        self.assertIn("navigation.indexes", project["theme"]["features"])
 
         custom_dir = project["theme"].get("custom_dir")
         if custom_dir is not None:
@@ -49,6 +50,93 @@ class RepositoryPolicyTests(unittest.TestCase):
                 text=True,
             ).stdout.splitlines()
             self.assertTrue(tracked_files)
+
+    def test_conversion_guides_are_grouped_by_input_then_output(self) -> None:
+        with (ROOT / "zensical.toml").open("rb") as handle:
+            navigation = tomllib.load(handle)["project"]["nav"]
+
+        documentation = next(
+            item["Documentation"] for item in navigation if "Documentation" in item
+        )
+        guides = next(
+            item["Guides"] for item in documentation if isinstance(item, dict) and "Guides" in item
+        )
+
+        self.assertEqual(
+            guides,
+            [
+                "docs/guides/index.md",
+                {
+                    "Compose input": [
+                        "docs/guides/compose-input/index.md",
+                        {"Compose output": "docs/guides/convert/compose-to-compose/index.md"},
+                        {"Quadlet output": "docs/guides/convert/compose-to-quadlet/index.md"},
+                    ]
+                },
+                {
+                    "Quadlet input": [
+                        "docs/guides/quadlet-input/index.md",
+                        {"Compose output": "docs/guides/convert/quadlet-to-compose/index.md"},
+                        {"Quadlet output": "docs/guides/convert/quadlet-to-quadlet/index.md"},
+                    ]
+                },
+            ],
+        )
+
+    def test_boxferry_owns_primary_documentation_sources(self) -> None:
+        with (ROOT / "documentation-sources.toml").open("rb") as handle:
+            repositories = tomllib.load(handle)["repositories"]
+
+        boxferry = next(
+            repository for repository in repositories if repository["name"] == "boxferry"
+        )
+        mappings = {
+            (document["source"], document["destination"]) for document in boxferry["documents"]
+        }
+        self.assertEqual(
+            mappings,
+            {
+                ("docs/public/index.md", "docs/index.md"),
+                ("docs/public/getting-started", "docs/getting-started"),
+                ("docs/public/guides", "docs/guides"),
+                ("docs/public/concepts", "docs/concepts"),
+                ("docs/public/reference", "docs/reference"),
+                ("docs/public/development", "docs/development"),
+                ("docs/documentation-examples.toml", "_data/documentation-examples.toml"),
+            },
+        )
+        for path in (
+            "content/docs/index.md",
+            "content/docs/getting-started",
+            "content/docs/guides",
+            "content/docs/concepts",
+            "content/docs/reference",
+            "content/docs/development",
+        ):
+            with self.subTest(path=path):
+                self.assertFalse((ROOT / path).exists())
+
+    def test_public_writing_contract_is_short_task_oriented_and_executable(self) -> None:
+        guidelines = (ROOT / "docs" / "content-guidelines.md").read_text(encoding="utf-8")
+        for expected in (
+            "finish a task",
+            "below 900 words",
+            "black-box tests",
+            "Do not publish roadmaps",
+            "repository that owns behavior owns its technical Markdown",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, guidelines)
+
+        assembler = (ROOT / "scripts" / "assemble_docs.py").read_text(encoding="utf-8")
+        for expected in (
+            "_verify_documented_commands",
+            "_generate_rule_reference",
+            "PUBLIC_PAGE_WORD_LIMIT",
+            "PLACEHOLDER_PHRASES",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, assembler)
 
     def test_company_and_legal_links_are_explicit_and_first_party(self) -> None:
         with (ROOT / "zensical.toml").open("rb") as handle:
@@ -213,6 +301,24 @@ class RepositoryPolicyTests(unittest.TestCase):
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, gate)
+
+    def test_complete_yaml_documents_use_explicit_start_markers(self) -> None:
+        documents = sorted(
+            [*ROOT.glob("**/*.yaml"), *ROOT.glob("**/*.yml")],
+        )
+        documents = [
+            path
+            for path in documents
+            if not any(
+                part in {".generated", ".venv", "node_modules", "site", "temp"}
+                for part in path.parts
+            )
+        ]
+        self.assertTrue(documents)
+        for document in documents:
+            with self.subTest(document=document.relative_to(ROOT)):
+                first_line = document.read_text(encoding="utf-8").splitlines()[0]
+                self.assertEqual(first_line, "---")
 
 
 if __name__ == "__main__":
