@@ -9,6 +9,8 @@ import tomllib
 import unittest
 from pathlib import Path
 
+from scripts.generate_brand_assets import GENERATED_ASSET_PATHS
+
 ROOT = Path(__file__).resolve().parents[1]
 ACTION_PATTERN = re.compile(r"uses:\s+[^\s@]+@([0-9a-f]{40})\s+#\s+v?\d")
 COLOR_PATTERN = re.compile(r"#[0-9a-fA-F]{3,8}\b|(?:rgb|hsl)a?\(")
@@ -24,6 +26,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(project["site_url"], "https://boxferry.dev/")
         self.assertEqual(project["docs_dir"], ".generated/docs")
         self.assertEqual(project["site_dir"], "site")
+        self.assertEqual(project["repo_url"], "https://github.com/Strukturpiloten/boxferry")
         self.assertEqual(project["theme"]["palette"][0]["scheme"], "slate")
         self.assertEqual(project["theme"]["palette"][1]["scheme"], "default")
 
@@ -31,13 +34,67 @@ class RepositoryPolicyTests(unittest.TestCase):
         if custom_dir is not None:
             self.assertTrue((ROOT / custom_dir).is_dir())
             tracked_files = subprocess.run(
-                ["git", "ls-files", "--", custom_dir],
+                [
+                    "git",
+                    "ls-files",
+                    "--cached",
+                    "--others",
+                    "--exclude-standard",
+                    "--",
+                    custom_dir,
+                ],
                 cwd=ROOT,
                 check=True,
                 capture_output=True,
                 text=True,
             ).stdout.splitlines()
             self.assertTrue(tracked_files)
+
+    def test_company_and_legal_links_are_explicit_and_first_party(self) -> None:
+        with (ROOT / "zensical.toml").open("rb") as handle:
+            extra = tomllib.load(handle)["project"]["extra"]
+
+        self.assertEqual(
+            extra,
+            {
+                "contact_url": "https://www.strukturpiloten.de/kontakt",
+                "legal_notice_path": "legal-notice/",
+                "privacy_policy_path": "privacy-policy/",
+                "strukturpiloten_url": "https://www.strukturpiloten.de/",
+            },
+        )
+
+    def test_english_legal_pages_cover_provider_and_privacy_baselines(self) -> None:
+        legal_notice = (ROOT / "content" / "legal-notice" / "index.md").read_text(encoding="utf-8")
+        privacy_policy = (ROOT / "content" / "privacy-policy" / "index.md").read_text(
+            encoding="utf-8"
+        )
+
+        for expected in ("Legal Notice", "Section 5", "HRA 200758", "DE456878137"):
+            with self.subTest(document="legal notice", expected=expected):
+                self.assertIn(expected, legal_notice)
+        for expected in (
+            "Privacy Policy",
+            "Hetzner Online GmbH",
+            "Article 6(1)(f) GDPR",
+            "14 days",
+            "does not set cookies",
+            "local storage",
+            "Section 25(2)(2)",
+            "Article 21 GDPR",
+        ):
+            with self.subTest(document="privacy policy", expected=expected):
+                self.assertIn(expected, privacy_policy)
+
+    def test_custom_company_icon_is_local_monochrome_and_passive(self) -> None:
+        icon = ROOT / "overrides" / ".icons" / "strukturpiloten" / "rocket.svg"
+        source = icon.read_text(encoding="utf-8")
+
+        self.assertIn("currentColor", source)
+        self.assertIn('aria-hidden="true"', source)
+        self.assertNotIn("<script", source.casefold())
+        self.assertNotIn("href=", source.casefold())
+        self.assertIsNone(COLOR_PATTERN.search(source))
 
     def test_direct_python_tools_are_exactly_pinned(self) -> None:
         with (ROOT / "pyproject.toml").open("rb") as handle:
@@ -49,6 +106,20 @@ class RepositoryPolicyTests(unittest.TestCase):
             ["ruff==0.16.3", "zensical==0.0.56", "zizmor==1.28.0"],
         )
         self.assertEqual(configuration["tool"]["uv"]["required-version"], "==0.12.5")
+
+    def test_spelling_gate_is_pinned_and_covers_repository_sources(self) -> None:
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        self.assertEqual(package["devDependencies"]["cspell"], "10.0.1")
+
+        configuration = json.loads((ROOT / "cspell.json").read_text(encoding="utf-8"))
+        self.assertTrue(configuration["useGitignore"])
+        self.assertEqual(configuration["language"], "en,en-US")
+
+        file_gate = (ROOT / "scripts" / "check-files.sh").read_text(encoding="utf-8")
+        self.assertIn("cspell --config cspell.json", file_gate)
+        for extension in ("*.md", "*.py", "*.toml", "*.json", "*.yaml", "*.css", "*.svg"):
+            with self.subTest(extension=extension):
+                self.assertIn(extension, file_gate)
 
     def test_tombi_uses_an_offline_pyproject_schema(self) -> None:
         with (ROOT / "tombi.toml").open("rb") as handle:
@@ -87,14 +158,16 @@ class RepositoryPolicyTests(unittest.TestCase):
 
     def test_literal_colors_are_centralized(self) -> None:
         token_file = ROOT / "content" / "assets" / "stylesheets" / "tokens.css"
+        generated_assets = {ROOT / path for path in GENERATED_ASSET_PATHS}
         candidates = [
             *ROOT.glob("content/**/*.css"),
             *ROOT.glob("content/**/*.html"),
             *ROOT.glob("content/**/*.svg"),
+            *ROOT.glob("docs/**/*.svg"),
             *ROOT.glob("overrides/**/*.html"),
         ]
         for path in candidates:
-            if path == token_file:
+            if path == token_file or path in generated_assets:
                 continue
             with self.subTest(path=path.relative_to(ROOT)):
                 self.assertIsNone(COLOR_PATTERN.search(path.read_text(encoding="utf-8")))
@@ -126,7 +199,9 @@ class RepositoryPolicyTests(unittest.TestCase):
         gate = (ROOT / "scripts" / "check-all.sh").read_text(encoding="utf-8")
         for expected in (
             "ruff format",
+            "generate_brand_assets.py",
             "scripts/check-files.sh",
+            "cspell",
             "actionlint",
             "zizmor",
             "ruff check",

@@ -1,14 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
   <title id="title">BoxFerry compact mark</title>
   <style>
-    .bf-logo-primary { color: #5aa9ff; }
-    .bf-logo-secondary { color: #71d1c2; }
-    .bf-logo-accent { color: #ffb454; }
-    @media (prefers-color-scheme: light) {
-      .bf-logo-primary { color: #176fc1; }
-      .bf-logo-secondary { color: #187c70; }
-      .bf-logo-accent { color: #a95700; }
-    }
+    .bf-logo-primary { color: #176fc1; }
+    .bf-logo-secondary { color: #187c70; }
+    .bf-logo-accent { color: #a95700; }
+    .bf-logo-word { color: #111a27; }
   </style>
   <rect
     class="bf-logo-primary"

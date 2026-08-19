@@ -5,6 +5,8 @@ site_url = "https://boxferry.dev/"
 docs_dir = ".generated/docs"
 site_dir = "site"
 copyright = "Copyright © Strukturpiloten OHG and BoxFerry contributors"
+repo_name = "Strukturpiloten/boxferry"
+repo_url = "https://github.com/Strukturpiloten/boxferry"
 extra_css = [
   "assets/stylesheets/tokens.css",
   "assets/stylesheets/site.css",
@@ -37,11 +39,17 @@ nav = [
     { "API" = "docs/api/index.md" },
     { "Development" = "docs/development/index.md" },
   ] },
+  { "Legal" = [
+    { "Legal Notice" = "legal-notice/index.md" },
+    { "Privacy Policy" = "privacy-policy/index.md" },
+  ] },
   { "GitHub" = "https://github.com/Strukturpiloten/boxferry" },
 ]
 
 [project.theme]
+custom_dir = "overrides"
 favicon = "assets/images/favicon.svg"
+logo = "assets/images/brand/generated/boxferry-mark-dark.svg"
 features = [
   "content.code.copy",
   "navigation.instant",
@@ -51,6 +59,9 @@ features = [
   "search.highlight",
   "search.suggest",
 ]
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
 
 [[project.theme.palette]]
 scheme = "slate"
@@ -75,6 +86,12 @@ unused_definitions = true
 unused_footnotes = true
 shadowed_definitions = true
 shadowed_footnotes = true
+
+[project.extra]
+contact_url = "https://www.strukturpiloten.de/kontakt"
+legal_notice_path = "legal-notice/"
+privacy_policy_path = "privacy-policy/"
+strukturpiloten_url = "https://www.strukturpiloten.de/"
 
 [project.plugins.offline]
 enabled = false

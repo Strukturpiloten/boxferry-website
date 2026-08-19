@@ -10,7 +10,7 @@ cd -- "${repository_root}"
 
 current_step="preflight"
 step=0
-readonly total_steps=15
+readonly total_steps=16
 
 fail() {
   printf 'BoxFerry website local validation failed: %s\n' "$1" >&2
@@ -61,7 +61,7 @@ run_step() {
 run_step "Install locked repository tools" npm ci --ignore-scripts
 run_step "Synchronize the locked Python environment" uv sync --locked
 
-required_tools=(actionlint git hadolint jq lychee markdownlint-cli2 prettier shellcheck shfmt tombi)
+required_tools=(actionlint cspell git hadolint jq lychee markdownlint-cli2 prettier shellcheck shfmt tombi)
 missing_tools=()
 for tool in "${required_tools[@]}"; do
   if ! command -v "${tool}" > /dev/null 2>&1; then
@@ -76,13 +76,21 @@ fi
 if [[ "${format_mode}" == "fix" ]]; then
   run_step "Format Python" uv run --frozen ruff format scripts tests
   file_mode="--fix"
+  brand_step="Generate token-derived brand assets"
+  brand_arguments=()
 else
   run_step "Check Python formatting" uv run --frozen ruff format --check scripts tests
   file_mode="--check"
+  brand_step="Check token-derived brand assets"
+  brand_arguments=(--check)
 fi
 readonly file_mode
+readonly brand_step
+readonly -a brand_arguments
 
 run_step "Format and lint non-Python files" bash scripts/check-files.sh "${file_mode}"
+run_step "${brand_step}" \
+  uv run --frozen python scripts/generate_brand_assets.py "${brand_arguments[@]}"
 run_step "Check whitespace errors" git --no-pager diff --check
 run_step "Lint GitHub Actions syntax" actionlint
 run_step "Audit GitHub Actions security" uv run --frozen zizmor .github/workflows

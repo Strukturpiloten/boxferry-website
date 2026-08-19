@@ -8,8 +8,20 @@ hide:
 
 <div class="bf-home">
   <section class="bf-hero">
+    <div class="bf-brand-lockup" aria-hidden="true">
+      <img
+        class="bf-brand-lockup--dark"
+        src="assets/images/brand/generated/boxferry-wordmark-dark.svg"
+        alt=""
+      />
+      <img
+        class="bf-brand-lockup--light"
+        src="assets/images/brand/generated/boxferry-wordmark-light.svg"
+        alt=""
+      />
+    </div>
     <p class="bf-eyebrow">Container definitions, carried safely</p>
-    <h1>Convert container applications without losing sight of their intent.</h1>
+    <h1>BoxFerry converts container applications without losing sight of their intent.</h1>
     <p class="bf-lead">
       BoxFerry is an open-source N:N converter for Compose and Quadlet. It explains unsupported,
       approximated, and omitted intent instead of silently discarding it.

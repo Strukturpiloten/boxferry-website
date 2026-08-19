@@ -23,9 +23,13 @@ Run the same complete task required before a pull request:
 ./scripts/check-all.sh
 ```
 
-The task formats owned files, validates every supported file type, runs Python tests, assembles the
-documentation, performs a strict Zensical build, checks required public routes, and validates local
-links without contacting external webservers.
+The task formats owned files, checks spelling, validates every supported file type, runs Python
+tests, regenerates token-derived brand assets, assembles the documentation, performs a strict
+Zensical build, checks required public routes and assets, and validates local links without
+contacting external web servers.
+
+Brand direction, asset inventory, accessibility targets, and regeneration details are documented
+in [`brand.md`](brand.md).
 
 ## Preview
 

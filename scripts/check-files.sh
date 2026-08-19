@@ -15,7 +15,7 @@ if [[ "${mode}" != "--check" && "${mode}" != "--fix" ]]; then
 fi
 readonly mode
 
-required_tools=(git hadolint markdownlint-cli2 prettier shellcheck shfmt tombi)
+required_tools=(cspell git hadolint markdownlint-cli2 prettier shellcheck shfmt tombi)
 missing_tools=()
 for tool in "${required_tools[@]}"; do
   if ! command -v "${tool}" > /dev/null 2>&1; then
@@ -44,6 +44,11 @@ mapfile -d '' structured_files < <(
 mapfile -d '' toml_files < <(list_existing_files '*.toml')
 mapfile -d '' shell_files < <(list_existing_files '*.sh')
 mapfile -d '' web_files < <(list_existing_files '*.css' '*.html' '*.js' '*.mjs' '*.svg')
+mapfile -d '' spelling_files < <(
+  list_existing_files \
+    '*.md' '*.py' '*.sh' '*.toml' '*.json' '*.jsonc' '*.yaml' '*.yml' \
+    '*.css' '*.html' '*.js' '*.mjs' '*.svg'
+)
 mapfile -d '' dockerfiles < <(
   list_existing_files ':(glob)Dockerfile' ':(glob)**/Dockerfile' ':(glob)**/Dockerfile.*'
 )
@@ -90,6 +95,9 @@ fi
 
 printf '\nLint Markdown\n'
 run markdownlint-cli2 "${markdown_literals[@]}"
+
+printf '\nCheck spelling\n'
+run cspell --config cspell.json --no-progress --no-summary -- "${spelling_files[@]}"
 
 printf '\nCheck Markdown formatting\n'
 run prettier --check --ignore-path .prettierignore --ignore-unknown "${markdown_files[@]}"

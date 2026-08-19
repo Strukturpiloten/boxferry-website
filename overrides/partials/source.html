@@ -1,0 +1,19 @@
+<div class="bf-header-links" aria-label="Project links">
+  <a
+    href="{{ config.repo_url }}"
+    class="bf-header-link md-header__button md-icon"
+    aria-label="BoxFerry on GitHub"
+    title="BoxFerry on GitHub"
+  >
+    {% set icon = config.theme.icon.repo or "fontawesome/brands/github" %} {% include ".icons/" ~
+    icon ~ ".svg" %}
+  </a>
+  <a
+    href="{{ config.extra.strukturpiloten_url }}"
+    class="bf-header-link md-header__button md-icon"
+    aria-label="Strukturpiloten"
+    title="Strukturpiloten"
+  >
+    {% include ".icons/strukturpiloten/rocket.svg" %}
+  </a>
+</div>

@@ -15,6 +15,17 @@ describes their behavior. The source manifest maps accepted documents into stabl
 every source mapping, and records the exact pinned revisions without exposing local paths. Zensical
 then turns that staging tree into the ignored `site/` directory.
 
+The brand build is deliberately smaller than the documentation assembler. Monochrome SVG originals
+and the design-token stylesheet are versioned sources. `scripts/generate_brand_assets.py` derives
+the committed dark, light, favicon, and social-preview variants and fails in check mode when any
+variant is missing or stale.
+
+Small Zensical partial overrides own the shared header and footer integrations. They add local,
+passive GitHub and Strukturpiloten marks, English website-owned legal pages, and a first-party
+company contact link without loading remote images, scripts, fonts, or tracking resources. The
+Strukturpiloten rocket is a monochrome vector reconstruction of the company favicon and inherits
+the active color scheme.
+
 Local preview mode selects an explicitly declared sibling-checkout location so documentation
 authors can preview uncommitted work on the host or in the shared Dev Container. Locked mode
 obtains exact source revisions and is the only mode permitted for production builds.
@@ -26,6 +37,8 @@ obtains exact source revisions and is the only mode permitted for production bui
 - Library documentation is secondary and starts below `/docs/libraries/`.
 - Generated API documentation starts below `/docs/api/`.
 - Site output is static and does not require application code on the webserver.
+- Brand assets require no remote font, browser script, or runtime color transformation.
+- Company and legal links remain visible on every generated page.
 
 ## Security and privacy
 

@@ -1,0 +1,16 @@
+<div class="md-copyright bf-footer">
+  {% if config.copyright %}
+  <div class="md-copyright__highlight">{{ config.copyright }}</div>
+  {% endif %}
+  <nav class="bf-footer__links" aria-label="Legal and company links">
+    <a href="{{ config.extra.legal_notice_path | url }}">Legal Notice</a>
+    <a href="{{ config.extra.privacy_policy_path | url }}">Privacy Policy</a>
+    <a href="{{ config.extra.contact_url }}">Contact</a>
+  </nav>
+  {% if not config.extra.generator == false %}
+  <span class="bf-footer__generator">
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener noreferrer">Zensical</a>
+  </span>
+  {% endif %}
+</div>
