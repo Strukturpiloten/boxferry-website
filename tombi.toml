@@ -1,0 +1,26 @@
+toml-version = "v1.0.0"
+
+[files]
+include = ["**/*.toml"]
+respect-ignore-files = true
+
+[format.rules]
+line-ending = "lf"
+
+[lint.rules]
+dotted-keys-out-of-order = "error"
+key-empty = "error"
+tables-out-of-order = "error"
+
+# Tombi 1.4.0's embedded PyProject schema references non-embedded Ruff and uv schemas. Use a local,
+# deliberately structural schema so fresh offline runners remain deterministic; uv and Ruff remain
+# the authoritative semantic validators for their respective configuration sections.
+[[schemas]]
+path = "docs/schemas/tombi-pyproject-offline.schema.json"
+include = ["pyproject.toml"]
+
+[[overrides]]
+files.include = ["documentation-sources.toml"]
+
+[overrides.lint.rules]
+tables-out-of-order = "off"

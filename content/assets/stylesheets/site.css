@@ -1,0 +1,99 @@
+.bf-home {
+  display: grid;
+  gap: 4rem;
+  padding-block: 2rem 5rem;
+}
+
+.bf-hero {
+  max-width: 54rem;
+  padding-block: clamp(2rem, 8vw, 7rem);
+}
+
+.bf-hero h1 {
+  max-width: 18ch;
+  margin-block: 0.4rem 1.25rem;
+  font-size: clamp(2.6rem, 7vw, 5.4rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.bf-eyebrow {
+  margin: 0;
+  color: var(--bf-brand-secondary);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bf-lead {
+  max-width: 48rem;
+  color: var(--bf-text-muted);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+}
+
+.bf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 2rem;
+}
+
+.bf-command,
+.bf-maintainer,
+.bf-grid article {
+  border: 1px solid var(--bf-border);
+  border-radius: 1rem;
+  background: var(--bf-surface);
+  box-shadow: 0 1rem 3rem var(--bf-shadow);
+}
+
+.bf-command {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 2rem;
+  align-items: center;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.bf-command pre {
+  margin: 0;
+}
+
+.bf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+}
+
+.bf-grid article,
+.bf-maintainer {
+  padding: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.bf-grid h2,
+.bf-maintainer h2,
+.bf-command h2 {
+  margin-top: 0.4rem;
+}
+
+.bf-grid p,
+.bf-maintainer p,
+.bf-command p {
+  color: var(--bf-text-muted);
+}
+
+:focus-visible {
+  outline: 0.2rem solid var(--bf-focus);
+  outline-offset: 0.2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

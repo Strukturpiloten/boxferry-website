@@ -1,0 +1,80 @@
+[project]
+site_name = "BoxFerry"
+site_description = "Reliable N:N conversion of container application definitions"
+site_url = "https://boxferry.dev/"
+docs_dir = ".generated/docs"
+site_dir = "site"
+copyright = "Copyright © Strukturpiloten OHG and BoxFerry contributors"
+extra_css = [
+  "assets/stylesheets/tokens.css",
+  "assets/stylesheets/site.css",
+]
+nav = [
+  { "Home" = "index.md" },
+  { "Documentation" = [
+    "docs/index.md",
+    { "Getting started" = "docs/getting-started/index.md" },
+    { "Guides" = [
+      "docs/guides/index.md",
+      { "Compose to Compose" = "docs/guides/convert/compose-to-compose/index.md" },
+      { "Compose to Quadlet" = "docs/guides/convert/compose-to-quadlet/index.md" },
+      { "Quadlet to Compose" = "docs/guides/convert/quadlet-to-compose/index.md" },
+      { "Quadlet to Quadlet" = "docs/guides/convert/quadlet-to-quadlet/index.md" },
+    ] },
+    { "Concepts" = "docs/concepts/index.md" },
+    { "Reference" = [
+      "docs/reference/index.md",
+      { "CLI" = "docs/reference/cli/index.md" },
+      { "Diagnostics" = "docs/reference/diagnostics/index.md" },
+      { "Compatibility" = "docs/reference/compatibility/index.md" },
+      { "Error reports" = "docs/reference/error-reports/index.md" },
+    ] },
+    { "Libraries" = [
+      "docs/libraries/index.md",
+      { "ComposeLens" = "docs/libraries/compose-lens/index.md" },
+      { "QuadletLens" = "docs/libraries/quadlet-lens/index.md" },
+    ] },
+    { "API" = "docs/api/index.md" },
+    { "Development" = "docs/development/index.md" },
+  ] },
+  { "GitHub" = "https://github.com/Strukturpiloten/boxferry" },
+]
+
+[project.theme]
+favicon = "assets/images/favicon.svg"
+features = [
+  "content.code.copy",
+  "navigation.instant",
+  "navigation.instant.progress",
+  "navigation.sections",
+  "navigation.top",
+  "search.highlight",
+  "search.suggest",
+]
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to dark mode"
+
+[project.validation]
+invalid_links = true
+invalid_link_anchors = true
+unresolved_references = true
+unresolved_footnotes = true
+unused_definitions = true
+unused_footnotes = true
+shadowed_definitions = true
+shadowed_footnotes = true
+
+[project.plugins.offline]
+enabled = false

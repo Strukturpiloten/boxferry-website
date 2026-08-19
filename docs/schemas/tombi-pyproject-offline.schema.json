@@ -1,0 +1,6 @@
+{
+  "title": "Python project configuration validated semantically by uv and Ruff",
+  "description": "Offline Tombi fallback that intentionally validates only the document's root shape.",
+  "type": "object",
+  "additionalProperties": true
+}

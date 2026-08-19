@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "BoxFerry Website: Format, lint, test, and build",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/check-all.sh",
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "BoxFerry Website: Assemble documentation",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "--frozen", "python", "scripts/assemble_docs.py", "--source-mode", "local"],
+      "problemMatcher": []
+    },
+    {
+      "label": "BoxFerry Website: Build",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "--frozen", "zensical", "build", "--clean", "--strict"],
+      "dependsOn": "BoxFerry Website: Assemble documentation",
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "BoxFerry Website: Preview",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/serve.sh",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      }
+    }
+  ]
+}

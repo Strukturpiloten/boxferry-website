@@ -1,0 +1,42 @@
+{
+  "editor.formatOnSave": true,
+  "files.watcherExclude": {
+    "**/.generated/**": true,
+    "**/.venv/**": true,
+    "**/node_modules/**": true,
+    "**/site/**": true
+  },
+  "search.exclude": {
+    "**/.generated/**": true,
+    "**/.venv/**": true,
+    "**/node_modules/**": true,
+    "**/site/**": true
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "mkhl.shfmt"
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tombi-toml.tombi"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

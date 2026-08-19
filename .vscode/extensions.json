@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "DavidAnson.vscode-markdownlint",
+    "esbenp.prettier-vscode",
+    "exiasr.hadolint",
+    "mkhl.shfmt",
+    "ms-python.python",
+    "ms-vscode-remote.remote-containers",
+    "redhat.vscode-yaml",
+    "streetsidesoftware.code-spell-checker",
+    "timonwong.shellcheck",
+    "tombi-toml.tombi"
+  ]
+}
