@@ -27,6 +27,18 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(project["theme"]["palette"][0]["scheme"], "slate")
         self.assertEqual(project["theme"]["palette"][1]["scheme"], "default")
 
+        custom_dir = project["theme"].get("custom_dir")
+        if custom_dir is not None:
+            self.assertTrue((ROOT / custom_dir).is_dir())
+            tracked_files = subprocess.run(
+                ["git", "ls-files", "--", custom_dir],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.splitlines()
+            self.assertTrue(tracked_files)
+
     def test_direct_python_tools_are_exactly_pinned(self) -> None:
         with (ROOT / "pyproject.toml").open("rb") as handle:
             configuration = tomllib.load(handle)

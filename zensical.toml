@@ -41,7 +41,6 @@ nav = [
 ]
 
 [project.theme]
-custom_dir = "overrides"
 favicon = "assets/images/favicon.svg"
 features = [
   "content.code.copy",
