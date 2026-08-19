@@ -8,6 +8,5 @@ readonly repository_root
 
 cd -- "${repository_root}"
 
-uv sync --locked
-uv run --frozen python scripts/assemble_docs.py --source-mode local
-exec uv run --frozen zensical serve
+./scripts/build-site.sh
+exec uv run --frozen python -m http.server 8000 --directory site

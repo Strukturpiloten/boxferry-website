@@ -32,6 +32,13 @@ class SiteVerificationTests(unittest.TestCase):
             path = self.site / asset
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text('<svg xmlns="http://www.w3.org/2000/svg" />\n', encoding="utf-8")
+        for slug, crate in (("compose-lens", "compose_lens"), ("quadlet-lens", "quadlet_lens")):
+            redirect = self.site / "docs" / "api" / slug / "index.html"
+            redirect.write_text(
+                f'<meta http-equiv="refresh" content="0; url={crate}/">'
+                f'<a href="{crate}/">API</a>\n',
+                encoding="utf-8",
+            )
         metadata = self.site / "assets" / "data" / "documentation-sources.json"
         metadata.parent.mkdir(parents=True)
         metadata.write_text(
@@ -131,6 +138,13 @@ class SiteVerificationTests(unittest.TestCase):
         (self.site / "search.json").write_text('{"docs":[]}\n', encoding="utf-8")
 
         with self.assertRaisesRegex(SiteVerificationError, "missing from generated search"):
+            verify_site(self.site)
+
+    def test_invalid_rustdoc_redirect_fails(self) -> None:
+        redirect = self.site / "docs" / "api" / "compose-lens" / "index.html"
+        redirect.write_text('<a href="elsewhere/">Wrong API</a>\n', encoding="utf-8")
+
+        with self.assertRaisesRegex(SiteVerificationError, "not a valid redirect"):
             verify_site(self.site)
 
 

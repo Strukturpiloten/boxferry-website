@@ -27,7 +27,21 @@ REQUIRED_ROUTES = (
     "docs/reference/compatibility/index.html",
     "docs/reference/error-reports/index.html",
     "docs/libraries/index.html",
+    "docs/libraries/compose-lens/index.html",
+    "docs/libraries/compose-lens/model/index.html",
+    "docs/libraries/compose-lens/parsing-rendering/index.html",
+    "docs/libraries/compose-lens/diagnostics/index.html",
+    "docs/libraries/compose-lens/compatibility/index.html",
+    "docs/libraries/quadlet-lens/index.html",
+    "docs/libraries/quadlet-lens/model/index.html",
+    "docs/libraries/quadlet-lens/parsing-rendering/index.html",
+    "docs/libraries/quadlet-lens/diagnostics/index.html",
+    "docs/libraries/quadlet-lens/compatibility/index.html",
     "docs/api/index.html",
+    "docs/api/compose-lens/index.html",
+    "docs/api/compose-lens/compose_lens/index.html",
+    "docs/api/quadlet-lens/index.html",
+    "docs/api/quadlet-lens/quadlet_lens/index.html",
     "docs/development/index.html",
     "docs/development/architecture/index.html",
     "docs/development/rust-api/index.html",
@@ -46,6 +60,7 @@ REQUIRED_ASSETS = (
     "assets/images/brand/generated/boxferry-social-dark.svg",
     "assets/images/brand/generated/boxferry-social-light.svg",
     "docs/reference/diagnostics/rules.json",
+    "docs/libraries/quadlet-lens/catalogue/v1/podman-supported-range.toml",
     "search.json",
 )
 REQUIRED_LINKS = (
@@ -115,6 +130,11 @@ def verify_site(site_directory: Path) -> None:
 
     if (site / "_data" / "documentation-examples.toml").exists():
         raise SiteVerificationError("assembly-only documentation example data was published")
+
+    for slug, crate in (("compose-lens", "compose_lens"), ("quadlet-lens", "quadlet_lens")):
+        redirect = (site / "docs" / "api" / slug / "index.html").read_text(encoding="utf-8")
+        if f"url={crate}/" not in redirect or f'href="{crate}/"' not in redirect:
+            raise SiteVerificationError(f"Rustdoc entry route is not a valid redirect: {slug}")
 
     _verify_rule_routes_and_search(site)
 

@@ -21,10 +21,7 @@
     {
       "label": "BoxFerry Website: Build",
       "type": "process",
-      "command": "uv",
-      "args": ["run", "--frozen", "zensical", "build", "--clean", "--strict"],
-      "dependsOn": "BoxFerry Website: Assemble documentation",
-      "dependsOrder": "sequence",
+      "command": "${workspaceFolder}/scripts/build-site.sh",
       "problemMatcher": [],
       "group": {
         "kind": "build",

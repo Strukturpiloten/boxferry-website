@@ -41,11 +41,33 @@ destination = "_data/documentation-examples.toml"
 [[repositories]]
 name = "compose-lens"
 repository = "https://github.com/Strukturpiloten/compose-lens.git"
-revision = "9bc38c71c0a452d8af63c692ab354be259b2a879"
+revision = "f9c5a1cc91e48048ad14958ccd1f5fec4731f48f"
 local-directories = ["../compose-lens"]
+
+[[repositories.documents]]
+source = "docs/public"
+destination = "docs/libraries/compose-lens"
+
+[repositories.rustdoc]
+package = "compose-lens"
+crate = "compose_lens"
+destination = "docs/api/compose-lens"
 
 [[repositories]]
 name = "quadlet-lens"
 repository = "https://github.com/Strukturpiloten/quadlet-lens.git"
-revision = "92ff067e0f717c3317e3d166a61b50c8d684fad9"
+revision = "d7d7b67e08c45d9edf217dd99b61686be854f2c9"
 local-directories = ["../quadlet-lens"]
+
+[[repositories.documents]]
+source = "docs/public"
+destination = "docs/libraries/quadlet-lens"
+
+[[repositories.documents]]
+source = "catalogue/v1/podman-supported-range.toml"
+destination = "docs/libraries/quadlet-lens/catalogue/v1/podman-supported-range.toml"
+
+[repositories.rustdoc]
+package = "quadlet-lens"
+crate = "quadlet_lens"
+destination = "docs/api/quadlet-lens"

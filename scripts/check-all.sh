@@ -10,7 +10,7 @@ cd -- "${repository_root}"
 
 current_step="preflight"
 step=0
-readonly total_steps=16
+readonly total_steps=17
 
 fail() {
   printf 'BoxFerry website local validation failed: %s\n' "$1" >&2
@@ -100,12 +100,17 @@ run_step "Run repository tests" uv run --frozen python -m unittest discover -s t
 run_step "Assemble documentation" uv run --frozen python scripts/assemble_docs.py \
   --source-mode "${source_mode}"
 run_step "Build the static site with warnings denied" uv run --frozen zensical build --clean --strict
+run_step "Build first-party Rust API documentation" \
+  uv run --frozen python scripts/build_rustdoc.py --source-mode "${source_mode}"
 run_step "Verify public routes and privacy boundaries" uv run --frozen python scripts/verify_site.py
 
 # The homepage links to assembled documentation routes that exist only in the generated site.
-mapfile -d '' markdown_files < <(
-  git ls-files --cached --others --exclude-standard -z -- '*.md' ':!content/index.md'
-)
+markdown_files=()
+while IFS= read -r -d '' markdown_file; do
+  if [[ -f "${markdown_file}" ]]; then
+    markdown_files+=("${markdown_file}")
+  fi
+done < <(git ls-files --cached --others --exclude-standard -z -- '*.md' ':!content/index.md')
 run_step "Check local source links" lychee --config lychee.toml --root-dir . --offline \
   "${markdown_files[@]}"
 

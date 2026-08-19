@@ -3,5 +3,5 @@
 BoxFerry is the primary product. The Lens libraries are documented here for applications that need
 direct format parsing, editing, validation, or rendering without BoxFerry orchestration.
 
-- [ComposeLens](compose-lens/)
-- [QuadletLens](quadlet-lens/)
+- [ComposeLens](https://boxferry.dev/docs/libraries/compose-lens/)
+- [QuadletLens](https://boxferry.dev/docs/libraries/quadlet-lens/)

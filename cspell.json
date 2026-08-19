@@ -47,6 +47,8 @@
     "QuadletLens",
     "rhysd",
     "Ruff",
+    "Rustdoc",
+    "RUSTDOCFLAGS",
     "shfmt",
     "shellcheck",
     "Stadthagen",

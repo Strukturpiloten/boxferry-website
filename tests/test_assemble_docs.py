@@ -41,6 +41,7 @@ class AssemblyTests(unittest.TestCase):
         destination: str = "docs/imported.md",
         revision: str = REVISION,
         duplicate: bool = False,
+        rustdoc_destination: str | None = None,
     ) -> Path:
         duplicate_mapping = ""
         if duplicate:
@@ -49,6 +50,13 @@ source = "docs/guide.md"
 destination = "{destination}"
 '''
         manifest = self.website / "documentation-sources.toml"
+        rustdoc = ""
+        if rustdoc_destination is not None:
+            rustdoc = f'''\n[repositories.rustdoc]
+package = "compose-lens"
+crate = "compose_lens"
+destination = "{rustdoc_destination}"
+'''
         manifest.write_text(
             f'''schema-version = 1
 
@@ -65,7 +73,7 @@ local-directories = ["../source"]
 [[repositories.documents]]
 source = "{source}"
 destination = "{destination}"
-{duplicate_mapping}''',
+{duplicate_mapping}{rustdoc}''',
             encoding="utf-8",
         )
         return manifest
@@ -103,6 +111,19 @@ destination = "{destination}"
     def test_non_exact_revision_is_rejected(self) -> None:
         with self.assertRaisesRegex(AssemblyError, "40-character Git SHA"):
             load_manifest(self.write_manifest(revision="main"))
+
+    def test_first_party_rustdoc_mapping_is_explicit_and_stable(self) -> None:
+        manifest = load_manifest(self.write_manifest(rustdoc_destination="docs/api/boxferry"))
+
+        rustdoc = manifest.repositories[0].rustdoc
+        self.assertIsNotNone(rustdoc)
+        assert rustdoc is not None
+        self.assertEqual(rustdoc.package, "compose-lens")
+        self.assertEqual(rustdoc.crate, "compose_lens")
+
+    def test_rustdoc_destination_cannot_escape_its_repository_route(self) -> None:
+        with self.assertRaisesRegex(AssemblyError, "must be docs/api/boxferry"):
+            load_manifest(self.write_manifest(rustdoc_destination="docs/api/other"))
 
     def test_symlinked_document_is_rejected(self) -> None:
         (self.source / "docs" / "guide.md").unlink()

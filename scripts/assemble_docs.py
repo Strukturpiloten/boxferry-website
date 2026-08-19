@@ -17,6 +17,8 @@ from typing import Any
 SCHEMA_VERSION = 1
 REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 REPOSITORY_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]*")
+PACKAGE_NAME_PATTERN = re.compile(r"[a-z][a-z0-9-]*")
+CRATE_NAME_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
 GITHUB_PREFIX = "https://github.com/Strukturpiloten/"
 RULE_CODE_PATTERN = re.compile(r"(?:BFC|BFQ|BFO)[0-9]{4}")
 RULE_NAME_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
@@ -47,6 +49,15 @@ class DocumentMapping:
 
 
 @dataclass(frozen=True)
+class RustdocMapping:
+    """Publish one crate's generated API at a stable first-party route."""
+
+    package: str
+    crate: str
+    destination: PurePosixPath
+
+
+@dataclass(frozen=True)
 class RepositorySource:
     """Describe one exact external documentation source."""
 
@@ -55,6 +66,7 @@ class RepositorySource:
     revision: str
     local_directories: tuple[Path, ...]
     documents: tuple[DocumentMapping, ...]
+    rustdoc: RustdocMapping | None
 
 
 @dataclass(frozen=True)
@@ -188,6 +200,33 @@ def load_manifest(path: Path) -> Manifest:
             destinations.add(destination)
             documents.append(DocumentMapping(source=source, destination=destination))
 
+        raw_rustdoc = table.get("rustdoc")
+        rustdoc = None
+        if raw_rustdoc is not None:
+            rustdoc_label = f"{label}.rustdoc"
+            rustdoc_table = _required_mapping(raw_rustdoc, rustdoc_label)
+            package = _required_string(rustdoc_table, "package", rustdoc_label)
+            crate = _required_string(rustdoc_table, "crate", rustdoc_label)
+            destination = _safe_relative_path(
+                _required_string(rustdoc_table, "destination", rustdoc_label),
+                f"{rustdoc_label}.destination",
+            )
+            if not PACKAGE_NAME_PATTERN.fullmatch(package):
+                raise AssemblyError(f"{rustdoc_label}.package must be a Cargo package slug")
+            if not CRATE_NAME_PATTERN.fullmatch(crate):
+                raise AssemblyError(f"{rustdoc_label}.crate must be a Rust crate slug")
+            expected_destination = PurePosixPath("docs", "api", name)
+            if destination != expected_destination:
+                raise AssemblyError(f"{rustdoc_label}.destination must be {expected_destination}")
+            if destination in destinations:
+                raise AssemblyError(f"duplicate documentation destination: {destination}")
+            destinations.add(destination)
+            rustdoc = RustdocMapping(
+                package=package,
+                crate=crate,
+                destination=destination,
+            )
+
         repositories.append(
             RepositorySource(
                 name=name,
@@ -195,6 +234,7 @@ def load_manifest(path: Path) -> Manifest:
                 revision=revision,
                 local_directories=local_directories,
                 documents=tuple(documents),
+                rustdoc=rustdoc,
             )
         )
 
@@ -458,6 +498,7 @@ def _verify_public_content(staging: Path) -> None:
         documentation_root / "guides",
         documentation_root / "concepts",
         documentation_root / "reference",
+        documentation_root / "libraries",
         documentation_root / "development",
     )
     files: list[Path] = []
