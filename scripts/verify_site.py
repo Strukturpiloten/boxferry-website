@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -21,9 +22,18 @@ REQUIRED_ROUTES = (
     "docs/guides/convert/quadlet-to-quadlet/index.html",
     "docs/concepts/index.html",
     "docs/reference/index.html",
+    "docs/reference/cli/index.html",
+    "docs/reference/diagnostics/index.html",
+    "docs/reference/compatibility/index.html",
+    "docs/reference/error-reports/index.html",
     "docs/libraries/index.html",
     "docs/api/index.html",
     "docs/development/index.html",
+    "docs/development/architecture/index.html",
+    "docs/development/rust-api/index.html",
+    "docs/development/testing/index.html",
+    "docs/development/contributing/index.html",
+    "docs/development/releases/index.html",
 )
 REQUIRED_ASSETS = (
     "assets/images/favicon.svg",
@@ -35,6 +45,8 @@ REQUIRED_ASSETS = (
     "assets/images/brand/generated/boxferry-wordmark-light.svg",
     "assets/images/brand/generated/boxferry-social-dark.svg",
     "assets/images/brand/generated/boxferry-social-light.svg",
+    "docs/reference/diagnostics/rules.json",
+    "search.json",
 )
 REQUIRED_LINKS = (
     "https://github.com/Strukturpiloten/boxferry",
@@ -55,6 +67,36 @@ class SiteVerificationError(RuntimeError):
     """Describe an incomplete or privacy-unsafe static site."""
 
 
+def _verify_rule_routes_and_search(site: Path) -> None:
+    catalogue_path = site / "docs" / "reference" / "diagnostics" / "rules.json"
+    try:
+        catalogue = json.loads(catalogue_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise SiteVerificationError("diagnostic rule catalogue is missing or invalid") from error
+    rules = catalogue.get("rules")
+    if catalogue.get("schema_version") != 1 or not isinstance(rules, list) or not rules:
+        raise SiteVerificationError("diagnostic rule catalogue has an invalid contract")
+
+    search_text = (site / "search.json").read_text(encoding="utf-8")
+    for rule in rules:
+        if not isinstance(rule, dict):
+            raise SiteVerificationError("diagnostic rule catalogue contains an invalid rule")
+        code = rule.get("code")
+        name = rule.get("name")
+        if not isinstance(code, str) or not re.fullmatch(r"(?:BFC|BFQ|BFO)[0-9]{4}", code):
+            raise SiteVerificationError("diagnostic rule catalogue contains an invalid code")
+        if not isinstance(name, str) or not name:
+            raise SiteVerificationError(f"diagnostic rule {code} has no name")
+        page = site / "docs" / "reference" / "diagnostics" / "rules" / code / "index.html"
+        if not page.is_file():
+            raise SiteVerificationError(f"diagnostic rule route is missing: {code}")
+        page_text = page.read_text(encoding="utf-8")
+        if code not in page_text or name not in page_text:
+            raise SiteVerificationError(f"diagnostic rule route content drifted: {code}")
+        if code not in search_text or name not in search_text:
+            raise SiteVerificationError(f"diagnostic rule is missing from generated search: {code}")
+
+
 def verify_site(site_directory: Path) -> None:
     """Validate stable routes, source metadata, and path-disclosure boundaries."""
     site = site_directory.resolve()
@@ -70,6 +112,11 @@ def verify_site(site_directory: Path) -> None:
         raise SiteVerificationError(
             f"required public assets are missing: {', '.join(missing_assets)}"
         )
+
+    if (site / "_data" / "documentation-examples.toml").exists():
+        raise SiteVerificationError("assembly-only documentation example data was published")
+
+    _verify_rule_routes_and_search(site)
 
     homepage = (site / "index.html").read_text(encoding="utf-8")
     missing_links = [link for link in REQUIRED_LINKS if f'href="{link}"' not in homepage]

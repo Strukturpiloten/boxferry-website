@@ -7,7 +7,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.assemble_docs import AssemblyError, assemble, load_manifest
+from scripts.assemble_docs import (
+    AssemblyError,
+    _generate_rule_reference,
+    _verify_documented_commands,
+    _verify_public_content,
+    assemble,
+    load_manifest,
+)
 
 REVISION = "0123456789abcdef0123456789abcdef01234567"
 
@@ -117,6 +124,98 @@ destination = "{destination}"
 
         with self.assertRaisesRegex(AssemblyError, "local source repository is missing"):
             assemble(manifest, "local")
+
+    def test_rule_reference_is_generated_from_checked_catalogue(self) -> None:
+        staging = self.root / "rules"
+        diagnostics = staging / "docs" / "reference" / "diagnostics"
+        diagnostics.mkdir(parents=True)
+        (diagnostics / "index.md").write_text(
+            "# Rules\n\n<!-- boxferry-generated-rule-index -->\n",
+            encoding="utf-8",
+        )
+        (diagnostics / "rules.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "rules": [
+                        {
+                            "code": "BFC0001",
+                            "name": "compose-model-invalid",
+                            "default_severity": "error",
+                            "description": "The value is invalid.",
+                            "help": "Correct the value.",
+                            "owner": "Compose adapter",
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        _generate_rule_reference(staging)
+
+        index = (diagnostics / "index.md").read_text(encoding="utf-8")
+        page = (diagnostics / "rules" / "BFC0001" / "index.md").read_text(encoding="utf-8")
+        self.assertIn("rules/BFC0001/", index)
+        self.assertIn("# BFC0001: compose-model-invalid", page)
+        self.assertIn("Correct the value.", page)
+
+    def test_invalid_rule_catalogue_fails_before_generation(self) -> None:
+        staging = self.root / "invalid-rules"
+        diagnostics = staging / "docs" / "reference" / "diagnostics"
+        diagnostics.mkdir(parents=True)
+        (diagnostics / "index.md").write_text(
+            "# Rules\n\n<!-- boxferry-generated-rule-index -->\n",
+            encoding="utf-8",
+        )
+        (diagnostics / "rules.json").write_text(
+            '{"schema_version":1,"rules":[{"code":"unsafe","name":"rule",'
+            '"default_severity":"error","description":"Bad.","help":"Fix.",'
+            '"owner":"Owner"}]}',
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(AssemblyError, "not a BoxFerry rule code"):
+            _generate_rule_reference(staging)
+
+    def test_documented_command_contract_requires_positive_and_negative_route_examples(
+        self,
+    ) -> None:
+        staging = self.root / "examples"
+        page = staging / "docs" / "guides" / "index.md"
+        page.parent.mkdir(parents=True)
+        page.write_text(
+            "# Guide\n\n<!-- boxferry-example: only-one -->\n\n"
+            "```console\nboxferry convert compose compose\n```\n",
+            encoding="utf-8",
+        )
+        data = staging / "_data"
+        data.mkdir()
+        (data / "documentation-examples.toml").write_text(
+            """schema = 1
+fixture-directory = "fixtures"
+
+[[examples]]
+id = "only-one"
+pages = ["docs/public/guides/index.md"]
+command = "boxferry convert compose compose"
+args = ["convert", "compose", "compose"]
+expected-exit = 0
+""",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(AssemblyError, "every document route"):
+            _verify_documented_commands(staging)
+
+    def test_public_content_rejects_placeholder_copy(self) -> None:
+        staging = self.root / "content-quality"
+        page = staging / "docs" / "index.md"
+        page.parent.mkdir(parents=True)
+        page.write_text("# Docs\n\nThis guide will explain the command.\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(AssemblyError, "placeholder phrase"):
+            _verify_public_content(staging)
 
 
 if __name__ == "__main__":

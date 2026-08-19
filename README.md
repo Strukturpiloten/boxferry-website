@@ -26,6 +26,6 @@ The supported toolchain and repository architecture are documented in
 
 ## Status
 
-The repository implements the documentation foundation and the production BoxFerry visual
-identity. Executable examples and the substantive BoxFerry and Lens documentation rewrites are the
-next milestones.
+The site assembles concise BoxFerry user documentation, checks its published CLI examples, and
+generates stable diagnostic-rule pages. Lens content and production deployment remain later
+milestones.

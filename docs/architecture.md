@@ -9,6 +9,11 @@ The website repository owns presentation, shared navigation, design tokens, sour
 validation, and deployment. Product and library repositories own the technical Markdown that
 describes their behavior. The source manifest maps accepted documents into stable public routes.
 
+Primary BoxFerry pages come from `boxferry/docs/public/`. Its
+`docs/documentation-examples.toml` file is an assembly-only contract: BoxFerry executes every
+command, and the website rejects missing or changed command blocks. The manifest is removed before
+the Zensical build.
+
 ## Build boundary
 
 `scripts/assemble_docs.py` copies website-owned content into an ignored staging directory, validates
@@ -26,6 +31,10 @@ company contact link without loading remote images, scripts, fonts, or tracking 
 Strukturpiloten rocket is a monochrome vector reconstruction of the company favicon and inherits
 the active color scheme.
 
+The diagnostic catalogue comes from BoxFerry as checked JSON. Assembly generates one short
+Markdown page per rule and the rule index. Repetitive reference text therefore cannot drift from
+`boxferry rules`.
+
 Local preview mode selects an explicitly declared sibling-checkout location so documentation
 authors can preview uncommitted work on the host or in the shared Dev Container. Locked mode
 obtains exact source revisions and is the only mode permitted for production builds.
@@ -36,6 +45,7 @@ obtains exact source revisions and is the only mode permitted for production bui
 - Product documentation starts at `/docs/`.
 - Library documentation is secondary and starts below `/docs/libraries/`.
 - Generated API documentation starts below `/docs/api/`.
+- Every rule has a stable `/docs/reference/diagnostics/rules/CODE/` page.
 - Site output is static and does not require application code on the webserver.
 - Brand assets require no remote font, browser script, or runtime color transformation.
 - Company and legal links remain visible on every generated page.
@@ -45,3 +55,7 @@ obtains exact source revisions and is the only mode permitted for production bui
 Mappings reject absolute paths, parent traversal, symlinks, duplicate destinations, and unknown
 repositories. Generated metadata contains repository URLs and pinned revisions only. It never
 contains checkout paths, environment values, credentials, or source-control authentication.
+
+Public BoxFerry pages also pass a small content contract: one level-one heading, no placeholder
+copy, at most 900 words per page, and no prose paragraph above 120 words. These limits prevent
+reference dumps and generated filler; they are not targets to fill.

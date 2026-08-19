@@ -47,6 +47,35 @@ class SiteVerificationTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
+        catalogue = self.site / "docs" / "reference" / "diagnostics" / "rules.json"
+        catalogue.parent.mkdir(parents=True, exist_ok=True)
+        catalogue.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "rules": [
+                        {
+                            "code": "BFC0001",
+                            "name": "compose-model-invalid",
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        rule_page = (
+            self.site / "docs" / "reference" / "diagnostics" / "rules" / "BFC0001" / "index.html"
+        )
+        rule_page.parent.mkdir(parents=True)
+        rule_page.write_text(
+            "<!doctype html><title>BFC0001</title>compose-model-invalid\n",
+            encoding="utf-8",
+        )
+        search = self.site / "search.json"
+        search.write_text(
+            '{"docs":[{"title":"BFC0001: compose-model-invalid"}]}\n',
+            encoding="utf-8",
+        )
 
     def test_complete_site_passes(self) -> None:
         verify_site(self.site)
@@ -58,7 +87,7 @@ class SiteVerificationTests(unittest.TestCase):
             verify_site(self.site)
 
     def test_missing_brand_asset_fails(self) -> None:
-        (self.site / REQUIRED_ASSETS[-1]).unlink()
+        (self.site / REQUIRED_ASSETS[-3]).unlink()
 
         with self.assertRaisesRegex(SiteVerificationError, "required public assets are missing"):
             verify_site(self.site)
@@ -88,6 +117,20 @@ class SiteVerificationTests(unittest.TestCase):
         metadata.write_text("{}", encoding="utf-8")
 
         with self.assertRaisesRegex(SiteVerificationError, "unknown schema"):
+            verify_site(self.site)
+
+    def test_missing_generated_rule_route_fails(self) -> None:
+        (
+            self.site / "docs" / "reference" / "diagnostics" / "rules" / "BFC0001" / "index.html"
+        ).unlink()
+
+        with self.assertRaisesRegex(SiteVerificationError, "rule route is missing"):
+            verify_site(self.site)
+
+    def test_rule_missing_from_search_fails(self) -> None:
+        (self.site / "search.json").write_text('{"docs":[]}\n', encoding="utf-8")
+
+        with self.assertRaisesRegex(SiteVerificationError, "missing from generated search"):
             verify_site(self.site)
 
 
