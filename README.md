@@ -9,7 +9,7 @@ assembly, site validation, and deployment tooling.
 
 ## Develop locally
 
-Use the BoxFerry four-repository Dev Container workspace, then run:
+Use the BoxFerry five-repository Dev Container workspace, then run:
 
 ```console
 ./scripts/check-all.sh
@@ -26,6 +26,6 @@ The supported toolchain and repository architecture are documented in
 
 ## Status
 
-The site assembles concise BoxFerry and Lens documentation, checks published CLI examples,
-generates stable diagnostic-rule pages, and publishes first-party Lens Rust API documentation.
-Production deployment remains a later milestone.
+The site assembles concise BoxFerry, ComposeLens, PodmanLens, and QuadletLens documentation,
+checks published CLI examples, generates stable diagnostic-rule pages, and publishes first-party
+Lens Rust API documentation. Production deployment remains a later milestone.

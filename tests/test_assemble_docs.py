@@ -226,7 +226,7 @@ expected-exit = 0
             encoding="utf-8",
         )
 
-        with self.assertRaisesRegex(AssemblyError, "every document route"):
+        with self.assertRaisesRegex(AssemblyError, "documented command route matrix mismatch"):
             _verify_documented_commands(staging)
 
     def test_public_content_rejects_placeholder_copy(self) -> None:

@@ -18,8 +18,14 @@ REQUIRED_ROUTES = (
     "docs/guides/index.html",
     "docs/guides/convert/compose-to-compose/index.html",
     "docs/guides/convert/compose-to-quadlet/index.html",
+    "docs/guides/convert/compose-to-podman/index.html",
     "docs/guides/convert/quadlet-to-compose/index.html",
     "docs/guides/convert/quadlet-to-quadlet/index.html",
+    "docs/guides/convert/quadlet-to-podman/index.html",
+    "docs/guides/podman-input/index.html",
+    "docs/guides/convert/podman-to-compose/index.html",
+    "docs/guides/convert/podman-to-quadlet/index.html",
+    "docs/guides/convert/podman-to-podman/index.html",
     "docs/concepts/index.html",
     "docs/reference/index.html",
     "docs/reference/cli/index.html",
@@ -32,6 +38,13 @@ REQUIRED_ROUTES = (
     "docs/libraries/compose-lens/parsing-rendering/index.html",
     "docs/libraries/compose-lens/diagnostics/index.html",
     "docs/libraries/compose-lens/compatibility/index.html",
+    "docs/libraries/podman-lens/index.html",
+    "docs/libraries/podman-lens/acquisition/index.html",
+    "docs/libraries/podman-lens/discovery/index.html",
+    "docs/libraries/podman-lens/grouping/index.html",
+    "docs/libraries/podman-lens/planning-rendering/index.html",
+    "docs/libraries/podman-lens/diagnostics-privacy/index.html",
+    "docs/libraries/podman-lens/compatibility/index.html",
     "docs/libraries/quadlet-lens/index.html",
     "docs/libraries/quadlet-lens/model/index.html",
     "docs/libraries/quadlet-lens/parsing-rendering/index.html",
@@ -40,6 +53,8 @@ REQUIRED_ROUTES = (
     "docs/api/index.html",
     "docs/api/compose-lens/index.html",
     "docs/api/compose-lens/compose_lens/index.html",
+    "docs/api/podman-lens/index.html",
+    "docs/api/podman-lens/podman_lens/index.html",
     "docs/api/quadlet-lens/index.html",
     "docs/api/quadlet-lens/quadlet_lens/index.html",
     "docs/development/index.html",
@@ -78,6 +93,19 @@ FORBIDDEN_FRAGMENTS = (
 )
 
 
+RUSTDOC_ROUTES = (
+    ("compose-lens", "compose_lens"),
+    ("podman-lens", "podman_lens"),
+    ("quadlet-lens", "quadlet_lens"),
+)
+SOURCE_REPOSITORIES = (
+    "boxferry",
+    "compose-lens",
+    "podman-lens",
+    "quadlet-lens",
+)
+
+
 class SiteVerificationError(RuntimeError):
     """Describe an incomplete or privacy-unsafe static site."""
 
@@ -98,7 +126,7 @@ def _verify_rule_routes_and_search(site: Path) -> None:
             raise SiteVerificationError("diagnostic rule catalogue contains an invalid rule")
         code = rule.get("code")
         name = rule.get("name")
-        if not isinstance(code, str) or not re.fullmatch(r"(?:BFC|BFQ|BFO)[0-9]{4}", code):
+        if not isinstance(code, str) or not re.fullmatch(r"(?:BFC|BFO|BFP|BFQ)[0-9]{4}", code):
             raise SiteVerificationError("diagnostic rule catalogue contains an invalid code")
         if not isinstance(name, str) or not name:
             raise SiteVerificationError(f"diagnostic rule {code} has no name")
@@ -131,7 +159,7 @@ def verify_site(site_directory: Path) -> None:
     if (site / "_data" / "documentation-examples.toml").exists():
         raise SiteVerificationError("assembly-only documentation example data was published")
 
-    for slug, crate in (("compose-lens", "compose_lens"), ("quadlet-lens", "quadlet_lens")):
+    for slug, crate in RUSTDOC_ROUTES:
         redirect = (site / "docs" / "api" / slug / "index.html").read_text(encoding="utf-8")
         if f"url={crate}/" not in redirect or f'href="{crate}/"' not in redirect:
             raise SiteVerificationError(f"Rustdoc entry route is not a valid redirect: {slug}")
@@ -155,8 +183,28 @@ def verify_site(site_directory: Path) -> None:
     if metadata.get("schema_version") != 1:
         raise SiteVerificationError("documentation source metadata has an unknown schema")
     repositories = metadata.get("repositories")
-    if not isinstance(repositories, list) or len(repositories) != 3:
-        raise SiteVerificationError("documentation source metadata must contain three repositories")
+    if not isinstance(repositories, list):
+        raise SiteVerificationError("documentation source metadata repositories must be a list")
+    repository_names: list[str] = []
+    for repository in repositories:
+        if not isinstance(repository, dict) or not isinstance(repository.get("name"), str):
+            raise SiteVerificationError("documentation source metadata repository is invalid")
+        name = repository["name"]
+        repository_names.append(name)
+        expected_url = f"https://github.com/Strukturpiloten/{name}.git"
+        if repository.get("repository") != expected_url:
+            raise SiteVerificationError(
+                f"documentation source metadata repository URL is invalid: {name}"
+            )
+        revision = repository.get("revision")
+        if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
+            raise SiteVerificationError(
+                f"documentation source metadata revision is invalid: {name}"
+            )
+    if tuple(repository_names) != SOURCE_REPOSITORIES:
+        raise SiteVerificationError(
+            "documentation source metadata repository set is incomplete or unordered"
+        )
 
     for path in sorted(site.rglob("*")):
         if path.is_symlink():

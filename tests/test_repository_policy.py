@@ -71,6 +71,7 @@ class RepositoryPolicyTests(unittest.TestCase):
                         "docs/guides/compose-input/index.md",
                         {"Compose output": "docs/guides/convert/compose-to-compose/index.md"},
                         {"Quadlet output": "docs/guides/convert/compose-to-quadlet/index.md"},
+                        {"Podman output": "docs/guides/convert/compose-to-podman/index.md"},
                     ]
                 },
                 {
@@ -78,8 +79,67 @@ class RepositoryPolicyTests(unittest.TestCase):
                         "docs/guides/quadlet-input/index.md",
                         {"Compose output": "docs/guides/convert/quadlet-to-compose/index.md"},
                         {"Quadlet output": "docs/guides/convert/quadlet-to-quadlet/index.md"},
+                        {"Podman output": "docs/guides/convert/quadlet-to-podman/index.md"},
                     ]
                 },
+                {
+                    "Podman input": [
+                        "docs/guides/podman-input/index.md",
+                        {"Compose output": "docs/guides/convert/podman-to-compose/index.md"},
+                        {"Quadlet output": "docs/guides/convert/podman-to-quadlet/index.md"},
+                        {"Podman output": "docs/guides/convert/podman-to-podman/index.md"},
+                    ]
+                },
+            ],
+        )
+
+    def test_podman_lens_navigation_uses_local_guides_and_public_rustdoc(self) -> None:
+        with (ROOT / "zensical.toml").open("rb") as handle:
+            navigation = tomllib.load(handle)["project"]["nav"]
+
+        documentation = next(
+            item["Documentation"] for item in navigation if "Documentation" in item
+        )
+        libraries = next(
+            item["Libraries"]
+            for item in documentation
+            if isinstance(item, dict) and "Libraries" in item
+        )
+        podman_lens = next(
+            item["PodmanLens"]
+            for item in libraries
+            if isinstance(item, dict) and "PodmanLens" in item
+        )
+        self.assertEqual(
+            podman_lens,
+            [
+                "docs/libraries/podman-lens/index.md",
+                {"Acquisition": "docs/libraries/podman-lens/acquisition/index.md"},
+                {"Discovery": "docs/libraries/podman-lens/discovery/index.md"},
+                {"Grouping": "docs/libraries/podman-lens/grouping/index.md"},
+                {
+                    "Planning and rendering": (
+                        "docs/libraries/podman-lens/planning-rendering/index.md"
+                    )
+                },
+                {
+                    "Diagnostics and privacy": (
+                        "docs/libraries/podman-lens/diagnostics-privacy/index.md"
+                    )
+                },
+                {"Compatibility": "docs/libraries/podman-lens/compatibility/index.md"},
+            ],
+        )
+        api = next(
+            item["API"] for item in documentation if isinstance(item, dict) and "API" in item
+        )
+        self.assertEqual(
+            api,
+            [
+                "docs/api/index.md",
+                {"ComposeLens": "https://boxferry.dev/docs/api/compose-lens/"},
+                {"PodmanLens": "https://boxferry.dev/docs/api/podman-lens/"},
+                {"QuadletLens": "https://boxferry.dev/docs/api/quadlet-lens/"},
             ],
         )
 
@@ -90,6 +150,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         boxferry = next(
             repository for repository in repositories if repository["name"] == "boxferry"
         )
+        self.assertEqual(boxferry["revision"], "de2b52dd51615c74a672f6e9265c7f35472326a5")
         mappings = {
             (document["source"], document["destination"]) for document in boxferry["documents"]
         }
@@ -142,8 +203,16 @@ class RepositoryPolicyTests(unittest.TestCase):
         with (ROOT / "documentation-sources.toml").open("rb") as handle:
             repositories = tomllib.load(handle)["repositories"]
 
+        self.assertEqual(
+            [repository["name"] for repository in repositories],
+            ["boxferry", "compose-lens", "podman-lens", "quadlet-lens"],
+        )
+
         compose = next(
             repository for repository in repositories if repository["name"] == "compose-lens"
+        )
+        podman = next(
+            repository for repository in repositories if repository["name"] == "podman-lens"
         )
         quadlet = next(
             repository for repository in repositories if repository["name"] == "quadlet-lens"
@@ -158,6 +227,19 @@ class RepositoryPolicyTests(unittest.TestCase):
                 "package": "compose-lens",
                 "crate": "compose_lens",
                 "destination": "docs/api/compose-lens",
+            },
+        )
+        self.assertEqual(podman["revision"], "92a0fae5395dbdbcb949ec3ad74485bc7ae3f7f3")
+        self.assertEqual(
+            podman["documents"],
+            [{"source": "docs/public", "destination": "docs/libraries/podman-lens"}],
+        )
+        self.assertEqual(
+            podman["rustdoc"],
+            {
+                "package": "podman-lens",
+                "crate": "podman_lens",
+                "destination": "docs/api/podman-lens",
             },
         )
         self.assertEqual(
@@ -181,6 +263,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             },
         )
         self.assertFalse((ROOT / "content" / "docs" / "libraries" / "compose-lens").exists())
+        self.assertFalse((ROOT / "content" / "docs" / "libraries" / "podman-lens").exists())
         self.assertFalse((ROOT / "content" / "docs" / "libraries" / "quadlet-lens").exists())
 
     def test_company_and_legal_links_are_explicit_and_first_party(self) -> None:
