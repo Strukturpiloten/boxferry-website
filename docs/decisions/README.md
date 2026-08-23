@@ -7,3 +7,4 @@ relevant decision rather than silently changing the implementation.
 | --------------------------------------------------- | -------- | ------------------------------------------------------------ |
 | [0001](0001-zensical-unified-documentation-site.md) | Accepted | Zensical unified documentation site and repository ownership |
 | [0002](0002-token-derived-vector-identity.md)       | Accepted | Token-derived vector identity                                |
+| [0003](0003-hetzner-atomic-static-deployment.md)    | Accepted | Hetzner atomic static deployment                             |

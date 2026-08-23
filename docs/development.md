@@ -27,7 +27,8 @@ Run the same complete task required before a pull request:
 The task formats owned files, checks spelling, validates every supported file type, runs Python
 tests, regenerates token-derived brand assets, assembles the documentation, performs a strict
 Zensical build, generates first-party Lens Rustdoc, checks required public routes and assets, and
-validates local links without contacting external web servers.
+prepares the Apache deployment artifact, validates its privacy and server-policy boundaries, and
+checks local links without contacting external web servers.
 
 Brand direction, asset inventory, accessibility targets, and regeneration details are documented
 in [`brand.md`](brand.md).
@@ -66,6 +67,7 @@ uv sync --locked
 uv run --frozen python scripts/assemble_docs.py --source-mode locked
 uv run --frozen zensical build --strict
 uv run --frozen python scripts/build_rustdoc.py --source-mode locked
+uv run --frozen python scripts/prepare_deployment.py
 ```
 
 Locked assembly may access GitHub to obtain exact revisions declared in

@@ -21,11 +21,13 @@ For an interactive preview:
 ./scripts/serve.sh
 ```
 
-The supported toolchain and repository architecture are documented in
-[`docs/development.md`](docs/development.md) and [`docs/architecture.md`](docs/architecture.md).
+The supported toolchain, repository architecture, and production runbook are documented in
+[`docs/development.md`](docs/development.md), [`docs/architecture.md`](docs/architecture.md), and
+[`docs/deployment.md`](docs/deployment.md).
 
 ## Status
 
 The site assembles concise BoxFerry, ComposeLens, PodmanLens, and QuadletLens documentation,
 checks published CLI examples, generates stable diagnostic-rule pages, and publishes first-party
-Lens Rust API documentation. Production deployment remains a later milestone.
+Lens Rust API documentation. The manual production workflow builds exact locked revisions and
+deploys immutable, rollback-capable static releases to Hetzner after environment approval.

@@ -20,3 +20,4 @@ uv sync --locked
 uv run --frozen python scripts/assemble_docs.py --source-mode "${source_mode}"
 uv run --frozen zensical build --clean --strict
 uv run --frozen python scripts/build_rustdoc.py --source-mode "${source_mode}"
+uv run --frozen python scripts/prepare_deployment.py
