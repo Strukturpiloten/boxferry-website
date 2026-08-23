@@ -4,6 +4,7 @@ The Lens libraries publish generated Rust API documentation on this site from th
 source revisions as their user documentation.
 
 - [ComposeLens Rust API](https://boxferry.dev/docs/api/compose-lens/)
+- [PodmanLens Rust API](https://boxferry.dev/docs/api/podman-lens/)
 - [QuadletLens Rust API](https://boxferry.dev/docs/api/quadlet-lens/)
 
 Start with the [library guides](../libraries/) when choosing a processing stage or compatibility

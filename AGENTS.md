@@ -20,7 +20,8 @@ If a change contradicts an accepted decision, update or supersede it in the same
   visual identity, documentation assembly, site validation, and deployment.
 - BoxFerry user, CLI, conversion, diagnostic, privacy, architecture, and contributor documentation
   belongs in the `boxferry` repository.
-- Format-specific library documentation belongs in the corresponding Lens repository.
+- Format-specific library documentation belongs in the corresponding ComposeLens, PodmanLens, or
+  QuadletLens repository.
 - Do not duplicate technical Markdown from another repository. Add an explicit source mapping to
   `documentation-sources.toml` after the source document has been rewritten and accepted.
 - Generated content under `.generated/` and static output under `site/` must never be committed.

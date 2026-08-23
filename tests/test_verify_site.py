@@ -11,6 +11,8 @@ from scripts.verify_site import (
     REQUIRED_ASSETS,
     REQUIRED_LINKS,
     REQUIRED_ROUTES,
+    RUSTDOC_ROUTES,
+    SOURCE_REPOSITORIES,
     SiteVerificationError,
     verify_site,
 )
@@ -32,7 +34,7 @@ class SiteVerificationTests(unittest.TestCase):
             path = self.site / asset
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text('<svg xmlns="http://www.w3.org/2000/svg" />\n', encoding="utf-8")
-        for slug, crate in (("compose-lens", "compose_lens"), ("quadlet-lens", "quadlet_lens")):
+        for slug, crate in RUSTDOC_ROUTES:
             redirect = self.site / "docs" / "api" / slug / "index.html"
             redirect.write_text(
                 f'<meta http-equiv="refresh" content="0; url={crate}/">'
@@ -46,9 +48,12 @@ class SiteVerificationTests(unittest.TestCase):
                 {
                     "schema_version": 1,
                     "repositories": [
-                        {"name": "boxferry"},
-                        {"name": "compose-lens"},
-                        {"name": "quadlet-lens"},
+                        {
+                            "name": name,
+                            "repository": f"https://github.com/Strukturpiloten/{name}.git",
+                            "revision": "0123456789abcdef0123456789abcdef01234567",
+                        }
+                        for name in SOURCE_REPOSITORIES
                     ],
                 }
             ),
@@ -126,6 +131,28 @@ class SiteVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(SiteVerificationError, "unknown schema"):
             verify_site(self.site)
 
+    def test_incomplete_source_repository_set_fails(self) -> None:
+        metadata = self.site / "assets" / "data" / "documentation-sources.json"
+        document = json.loads(metadata.read_text(encoding="utf-8"))
+        document["repositories"] = [
+            repository
+            for repository in document["repositories"]
+            if repository["name"] != "podman-lens"
+        ]
+        metadata.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(SiteVerificationError, "incomplete or unordered"):
+            verify_site(self.site)
+
+    def test_invalid_source_revision_fails(self) -> None:
+        metadata = self.site / "assets" / "data" / "documentation-sources.json"
+        document = json.loads(metadata.read_text(encoding="utf-8"))
+        document["repositories"][0]["revision"] = "main"
+        metadata.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(SiteVerificationError, "revision is invalid"):
+            verify_site(self.site)
+
     def test_missing_generated_rule_route_fails(self) -> None:
         (
             self.site / "docs" / "reference" / "diagnostics" / "rules" / "BFC0001" / "index.html"
@@ -141,7 +168,7 @@ class SiteVerificationTests(unittest.TestCase):
             verify_site(self.site)
 
     def test_invalid_rustdoc_redirect_fails(self) -> None:
-        redirect = self.site / "docs" / "api" / "compose-lens" / "index.html"
+        redirect = self.site / "docs" / "api" / "podman-lens" / "index.html"
         redirect.write_text('<a href="elsewhere/">Wrong API</a>\n', encoding="utf-8")
 
         with self.assertRaisesRegex(SiteVerificationError, "not a valid redirect"):

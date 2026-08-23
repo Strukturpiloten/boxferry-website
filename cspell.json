@@ -41,6 +41,7 @@
     "mkhl",
     "mvdan",
     "Podman",
+    "PodmanLens",
     "pipefail",
     "pyproject",
     "Quadlet",

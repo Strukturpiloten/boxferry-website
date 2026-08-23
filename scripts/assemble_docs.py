@@ -20,7 +20,7 @@ REPOSITORY_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]*")
 PACKAGE_NAME_PATTERN = re.compile(r"[a-z][a-z0-9-]*")
 CRATE_NAME_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
 GITHUB_PREFIX = "https://github.com/Strukturpiloten/"
-RULE_CODE_PATTERN = re.compile(r"(?:BFC|BFQ|BFO)[0-9]{4}")
+RULE_CODE_PATTERN = re.compile(r"(?:BFC|BFO|BFP|BFQ)[0-9]{4}")
 RULE_NAME_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 EXAMPLE_ID_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 RULE_INDEX_MARKER = "<!-- boxferry-generated-rule-index -->"
@@ -33,6 +33,28 @@ PLACEHOLDER_PHRASES = (
     "this guide will",
     "this page will",
     "this section will",
+)
+EXPECTED_SUCCESSFUL_ROUTES = frozenset(
+    {
+        "compose->compose",
+        "compose->podman",
+        "compose->quadlet",
+        "podman->compose",
+        "podman->podman",
+        "podman->quadlet",
+        "quadlet->compose",
+        "quadlet->podman",
+        "quadlet->quadlet",
+    }
+)
+EXPECTED_FAILING_ROUTES = frozenset(
+    {
+        "compose->compose",
+        "compose->quadlet",
+        "podman->compose",
+        "quadlet->compose",
+        "quadlet->quadlet",
+    }
 )
 
 
@@ -473,14 +495,11 @@ def _verify_documented_commands(staging: Path) -> None:
             else:
                 failing_routes.add(route)
 
-    expected_routes = {
-        "compose->compose",
-        "compose->quadlet",
-        "quadlet->compose",
-        "quadlet->quadlet",
-    }
-    if successful_routes != expected_routes or failing_routes != expected_routes:
-        raise AssemblyError("every document route needs a checked successful and failing command")
+    if successful_routes != EXPECTED_SUCCESSFUL_ROUTES or failing_routes != EXPECTED_FAILING_ROUTES:
+        raise AssemblyError(
+            "documented command route matrix mismatch: "
+            f"successful={sorted(successful_routes)}; failing={sorted(failing_routes)}"
+        )
 
     manifest_path.unlink()
     data_directory = manifest_path.parent

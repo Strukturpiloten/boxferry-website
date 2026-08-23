@@ -2,9 +2,9 @@
 
 ## Supported environment
 
-The preferred environment is the BoxFerry four-repository Dev Container workspace. It provides the
-same pinned file-quality tools used by BoxFerry, ComposeLens, and QuadletLens, plus `uv` for the
-Zensical and Python toolchain.
+The preferred environment is the BoxFerry five-repository Dev Container workspace. It provides the
+same pinned file-quality tools used by BoxFerry, ComposeLens, PodmanLens, and QuadletLens, plus
+`uv` for the Zensical and Python toolchain.
 
 The sibling checkouts must share one parent directory:
 
@@ -12,6 +12,7 @@ The sibling checkouts must share one parent directory:
 boxferry/
 boxferry-website/
 compose-lens/
+podman-lens/
 quadlet-lens/
 ```
 
