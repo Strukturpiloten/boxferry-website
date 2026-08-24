@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 DEPLOYMENT_ROOT_PATTERN = re.compile(r"/(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+")
-PUBLIC_KEY_PATTERN = re.compile(r"ssh-ed25519 ([A-Za-z0-9+/]+={0,3})")
+PUBLIC_KEY_PATTERN = re.compile(r"ssh-ed25519 ([A-Za-z0-9+/]+={0,3})(?:[ \t]+[^\r\n]+)?")
 
 
 class AuthorizedKeysError(RuntimeError):
@@ -25,12 +25,8 @@ def validate_deployment_root(value: str) -> str:
     return value.rstrip("/")
 
 
-def read_public_key(path: Path) -> str:
-    """Read and structurally validate one Ed25519 public key."""
-    try:
-        value = path.read_text(encoding="utf-8").strip()
-    except OSError as error:
-        raise AuthorizedKeysError(f"cannot read public key: {path}") from error
+def normalize_public_key(value: str) -> str:
+    """Validate one Ed25519 public key and discard its untrusted comment."""
     match = PUBLIC_KEY_PATTERN.fullmatch(value)
     if match is None:
         raise AuthorizedKeysError("public key must contain exactly one ssh-ed25519 key")
@@ -40,7 +36,16 @@ def read_public_key(path: Path) -> str:
         raise AuthorizedKeysError("public key contains invalid base64") from error
     if len(decoded) < 32:
         raise AuthorizedKeysError("public key payload is unexpectedly short")
-    return value
+    return f"ssh-ed25519 {match.group(1)}"
+
+
+def read_public_key(path: Path) -> str:
+    """Read and structurally validate one Ed25519 public key."""
+    try:
+        value = path.read_text(encoding="utf-8").strip()
+    except OSError as error:
+        raise AuthorizedKeysError(f"cannot read public key: {path}") from error
+    return normalize_public_key(value)
 
 
 def render_authorized_keys(
@@ -49,17 +54,9 @@ def render_authorized_keys(
     updater_public_key: str,
 ) -> tuple[str, str]:
     """Return the rsync-only and updater-only authorized_keys entries."""
+    rsync_public_key = normalize_public_key(rsync_public_key)
+    updater_public_key = normalize_public_key(updater_public_key)
     root = validate_deployment_root(deployment_root)
-    for public_key in (rsync_public_key, updater_public_key):
-        match = PUBLIC_KEY_PATTERN.fullmatch(public_key)
-        if match is None:
-            raise AuthorizedKeysError("public key must contain exactly one ssh-ed25519 key")
-        try:
-            decoded = base64.b64decode(match.group(1), validate=True)
-        except (binascii.Error, ValueError) as error:
-            raise AuthorizedKeysError("public key contains invalid base64") from error
-        if len(decoded) < 32:
-            raise AuthorizedKeysError("public key payload is unexpectedly short")
 
     upload_command = f"/usr/bin/rrsync -wo {root}/incoming"
     updater_command = (
