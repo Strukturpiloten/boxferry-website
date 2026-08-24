@@ -23,8 +23,8 @@ hide:
     <p class="bf-eyebrow">Container definitions, carried safely</p>
     <h1>BoxFerry converts container applications without losing sight of their intent.</h1>
     <p class="bf-lead">
-      BoxFerry is an open-source N:N converter for Compose and Quadlet. It explains unsupported,
-      approximated, and omitted intent instead of silently discarding it.
+      BoxFerry is an open-source N:N converter for Compose, Podman, and Quadlet. It explains
+      unsupported, approximated, and omitted intent instead of silently discarding it.
     </p>
     <div class="bf-actions">
       <a class="md-button md-button--primary" href="docs/getting-started/">Get started</a>
@@ -37,6 +37,7 @@ hide:
       <p class="bf-eyebrow">A direct route</p>
       <h2 id="first-command">Start with one explicit conversion</h2>
       <p>Input and output formats are visible in the command, and route-specific help stays focused.</p>
+      <a class="md-button bf-route-link" href="docs/guides/">Conversion guides</a>
     </div>
 
     ```console

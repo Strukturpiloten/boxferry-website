@@ -21,6 +21,10 @@ For an interactive preview:
 ./scripts/serve.sh
 ```
 
+Navigation and theme entry points are listed in [`docs/customization.md`](docs/customization.md).
+Colors live in `content/assets/stylesheets/tokens.css`; logo sources and regeneration remain defined
+in [`docs/brand.md`](docs/brand.md).
+
 ## Deploy to production
 
 Successful push-triggered CI runs on `main` automatically publish their exact revision through the

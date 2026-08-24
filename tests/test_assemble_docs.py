@@ -238,6 +238,17 @@ expected-exit = 0
         with self.assertRaisesRegex(AssemblyError, "placeholder phrase"):
             _verify_public_content(staging)
 
+    def test_public_heading_count_ignores_shell_comments_in_fenced_code(self) -> None:
+        staging = self.root / "shell-example"
+        page = staging / "docs" / "index.md"
+        page.parent.mkdir(parents=True)
+        page.write_text(
+            "# Commands\n\n```sh\n#!/bin/sh\n# Review before running.\npodman version\n```\n",
+            encoding="utf-8",
+        )
+
+        _verify_public_content(staging)
+
 
 if __name__ == "__main__":
     unittest.main()

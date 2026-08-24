@@ -74,6 +74,8 @@ and [decision 0003](decisions/0003-hetzner-atomic-static-deployment.md).
 
 - The canonical origin is `https://boxferry.dev/`.
 - Product documentation starts at `/docs/`.
+- Open-source and professional support starts at `/support/`.
+- Exact build provenance is visible at `/docs/sources/` and in its machine-readable manifest.
 - Library documentation is secondary and starts below `/docs/libraries/`.
 - Generated API documentation starts below `/docs/api/`.
 - Every rule has a stable `/docs/reference/diagnostics/rules/CODE/` page.

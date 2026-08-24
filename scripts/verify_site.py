@@ -16,9 +16,11 @@ RELEASE_MANIFEST = Path(".boxferry-release")
 
 REQUIRED_ROUTES = (
     "index.html",
+    "support/index.html",
     "legal-notice/index.html",
     "privacy-policy/index.html",
     "docs/index.html",
+    "docs/sources/index.html",
     "docs/getting-started/index.html",
     "docs/guides/index.html",
     "docs/guides/convert/compose-to-compose/index.html",
@@ -89,7 +91,14 @@ REQUIRED_LINKS = (
     "./legal-notice/",
     "./privacy-policy/",
     "https://www.strukturpiloten.de/kontakt",
+    "docs/guides/",
 )
+REQUIRED_SUPPORT_LINKS = (
+    "https://github.com/Strukturpiloten/boxferry/discussions",
+    "https://github.com/Strukturpiloten/boxferry/issues/new/choose",
+    "https://www.strukturpiloten.de/kontakt",
+)
+SOURCE_MANIFEST_LINK = "https://boxferry.dev/assets/data/documentation-sources.json"
 FORBIDDEN_FRAGMENTS = (
     "/home/",
     "/workspaces/",
@@ -210,6 +219,19 @@ def verify_site(site_directory: Path) -> None:
         raise SiteVerificationError(
             f"required public links are missing: {', '.join(missing_links)}"
         )
+
+    support = (site / "support" / "index.html").read_text(encoding="utf-8")
+    missing_support_links = [
+        link for link in REQUIRED_SUPPORT_LINKS if f'href="{link}"' not in support
+    ]
+    if missing_support_links:
+        raise SiteVerificationError(
+            f"required support links are missing: {', '.join(missing_support_links)}"
+        )
+
+    sources = (site / "docs" / "sources" / "index.html").read_text(encoding="utf-8")
+    if f'href="{SOURCE_MANIFEST_LINK}"' not in sources:
+        raise SiteVerificationError("documentation source page does not link to source metadata")
 
     metadata_path = site / "assets" / "data" / "documentation-sources.json"
     try:

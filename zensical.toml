@@ -12,8 +12,7 @@ extra_css = [
   "assets/stylesheets/site.css",
 ]
 nav = [
-  { "Home" = "index.md" },
-  { "Documentation" = [
+  { "Docs" = [
     "docs/index.md",
     { "Getting started" = "docs/getting-started/index.md" },
     { "Guides" = [
@@ -21,20 +20,20 @@ nav = [
       { "Compose input" = [
         "docs/guides/compose-input/index.md",
         { "Compose output" = "docs/guides/convert/compose-to-compose/index.md" },
-        { "Quadlet output" = "docs/guides/convert/compose-to-quadlet/index.md" },
         { "Podman output" = "docs/guides/convert/compose-to-podman/index.md" },
-      ] },
-      { "Quadlet input" = [
-        "docs/guides/quadlet-input/index.md",
-        { "Compose output" = "docs/guides/convert/quadlet-to-compose/index.md" },
-        { "Quadlet output" = "docs/guides/convert/quadlet-to-quadlet/index.md" },
-        { "Podman output" = "docs/guides/convert/quadlet-to-podman/index.md" },
+        { "Quadlet output" = "docs/guides/convert/compose-to-quadlet/index.md" },
       ] },
       { "Podman input" = [
         "docs/guides/podman-input/index.md",
         { "Compose output" = "docs/guides/convert/podman-to-compose/index.md" },
-        { "Quadlet output" = "docs/guides/convert/podman-to-quadlet/index.md" },
         { "Podman output" = "docs/guides/convert/podman-to-podman/index.md" },
+        { "Quadlet output" = "docs/guides/convert/podman-to-quadlet/index.md" },
+      ] },
+      { "Quadlet input" = [
+        "docs/guides/quadlet-input/index.md",
+        { "Compose output" = "docs/guides/convert/quadlet-to-compose/index.md" },
+        { "Podman output" = "docs/guides/convert/quadlet-to-podman/index.md" },
+        { "Quadlet output" = "docs/guides/convert/quadlet-to-quadlet/index.md" },
       ] },
     ] },
     { "Concepts" = "docs/concepts/index.md" },
@@ -85,12 +84,9 @@ nav = [
       { "Contributing" = "docs/development/contributing/index.md" },
       { "Releases" = "docs/development/releases/index.md" },
     ] },
+    { "Documentation sources" = "docs/sources/index.md" },
   ] },
-  { "Legal" = [
-    { "Legal Notice" = "legal-notice/index.md" },
-    { "Privacy Policy" = "privacy-policy/index.md" },
-  ] },
-  { "GitHub" = "https://github.com/Strukturpiloten/boxferry" },
+  { "Support" = "support/index.md" },
 ]
 
 [project.theme]
@@ -104,6 +100,8 @@ features = [
   "navigation.instant",
   "navigation.instant.progress",
   "navigation.sections",
+  "navigation.tabs",
+  "navigation.tabs.sticky",
   "navigation.top",
   "search.highlight",
   "search.suggest",
@@ -125,6 +123,9 @@ primary = "custom"
 accent = "custom"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to dark mode"
+
+[project.markdown_extensions]
+pymdownx.details = {}
 
 [project.validation]
 invalid_links = true
