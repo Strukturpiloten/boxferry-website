@@ -8,6 +8,7 @@ from pathlib import Path
 
 from scripts.render_authorized_keys import (
     AuthorizedKeysError,
+    normalize_public_key,
     read_public_key,
     render_authorized_keys,
     validate_deployment_root,
@@ -46,10 +47,19 @@ class AuthorizedKeysTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(AuthorizedKeysError):
                 validate_deployment_root(value)
 
-    def test_non_ed25519_or_commented_key_is_rejected(self) -> None:
+    def test_public_key_comments_are_discarded(self) -> None:
+        commented_key = PUBLIC_KEY + " key comment with spaces"
+
+        self.assertEqual(normalize_public_key(commented_key), PUBLIC_KEY)
+        upload, updater = render_authorized_keys(ROOT, commented_key, commented_key)
+        self.assertNotIn("key comment with spaces", upload)
+        self.assertNotIn("key comment with spaces", updater)
+        self.assertIn(f"{PUBLIC_KEY} boxferry-website-rsync", upload)
+        self.assertIn(f"{PUBLIC_KEY} boxferry-website-version-updater", updater)
+
+    def test_non_ed25519_or_invalid_key_is_rejected(self) -> None:
         for value in (
             "ssh-rsa " + "QUFB" * 12,
-            PUBLIC_KEY + " unexpected-comment",
             "ssh-ed25519 not-base64!",
         ):
             with self.subTest(value=value), self.assertRaises(AuthorizedKeysError):
@@ -62,6 +72,13 @@ class AuthorizedKeysTests(unittest.TestCase):
 
             with self.assertRaisesRegex(AuthorizedKeysError, "exactly one"):
                 read_public_key(path)
+
+    def test_public_key_file_comment_is_discarded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "key.pub"
+            path.write_text(PUBLIC_KEY + " generated-key-comment\n", encoding="utf-8")
+
+            self.assertEqual(read_public_key(path), PUBLIC_KEY)
 
 
 if __name__ == "__main__":
