@@ -29,10 +29,23 @@ You need:
 - local `ssh`, `scp`, `ssh-keygen`, and `ssh-keyscan` commands;
 - `/usr/bin/rrsync` and `/usr/bin/flock` on Hetzner.
 
-The Hetzner account must allow an Apache document root below
-`/absolute/path/to/dev_boxferry`. Apache must honor the tracked `.htaccess` rules.
+The Hetzner account must allow an Apache document root at the `current` link below the chosen
+deployment root. Apache must honor the tracked `.htaccess` rules.
 
 ## 1. Create the GitHub environment
+
+Collect the environment-specific values in the local shell. The deployment root must be an absolute
+path without a trailing slash, and the site origin must use HTTPS.
+
+```console
+read -r -p 'Hetzner SSH host: ' BOXFERRY_DEPLOY_HOST
+read -r -p 'Hetzner SSH port: ' BOXFERRY_DEPLOY_PORT
+read -r -p 'Hetzner SSH user: ' BOXFERRY_DEPLOY_USER
+read -r -p 'Hetzner deployment root: ' BOXFERRY_DEPLOY_ROOT
+read -r -p 'Public HTTPS site origin: ' BOXFERRY_SITE_ORIGIN
+export BOXFERRY_DEPLOY_HOST BOXFERRY_DEPLOY_PORT BOXFERRY_DEPLOY_USER
+export BOXFERRY_DEPLOY_ROOT BOXFERRY_SITE_ORIGIN
+```
 
 In the repository, open **Settings → Environments → New environment** and create `production`.
 
@@ -42,32 +55,32 @@ Configure the environment to:
 2. require the desired reviewer;
 3. prevent administrators from bypassing the protection if that matches the project policy.
 
-Create these environment variables, not repository-level variables:
+Create these environment variables, not repository-level variables. Copy the current value from the
+corresponding local shell variable:
 
-| Variable                      | Value                                     |
-| ----------------------------- | ----------------------------------------- |
-| `BOXFERRY_DEPLOY_HOST`        | `<host>`                                  |
-| `BOXFERRY_DEPLOY_PORT`        | `<port>`                                  |
-| `BOXFERRY_DEPLOY_USER`        | `<username>`                              |
-| `BOXFERRY_DEPLOY_ROOT`        | `/absolute/path/to/dev_boxferry`          |
-| `BOXFERRY_SITE_ORIGIN`        | `https://boxferry.dev`                    |
-| `BOXFERRY_DEPLOY_KNOWN_HOSTS` | `ssh-keyscan -p <port> -t ed25519 <host>` |
+| GitHub environment variable   | Local source                 |
+| ----------------------------- | ---------------------------- |
+| `BOXFERRY_DEPLOY_HOST`        | `$BOXFERRY_DEPLOY_HOST`      |
+| `BOXFERRY_DEPLOY_PORT`        | `$BOXFERRY_DEPLOY_PORT`      |
+| `BOXFERRY_DEPLOY_USER`        | `$BOXFERRY_DEPLOY_USER`      |
+| `BOXFERRY_DEPLOY_ROOT`        | `$BOXFERRY_DEPLOY_ROOT`      |
+| `BOXFERRY_SITE_ORIGIN`        | `$BOXFERRY_SITE_ORIGIN`      |
+| `BOXFERRY_DEPLOY_KNOWN_HOSTS` | Generated and verified below |
 
 ### Verify the SSH host record
 
-Collect the server's Ed25519 host record:
+Collect the server's Ed25519 host record and inspect its fingerprint:
 
 ```console
-ssh-keyscan -p <port> -t ed25519 <host>
+BOXFERRY_DEPLOY_KNOWN_HOSTS="$(
+  ssh-keyscan -p "${BOXFERRY_DEPLOY_PORT}" -t ed25519 "${BOXFERRY_DEPLOY_HOST}" 2>/dev/null
+)"
+printf '%s\n' "${BOXFERRY_DEPLOY_KNOWN_HOSTS}"
+printf '%s\n' "${BOXFERRY_DEPLOY_KNOWN_HOSTS}" | ssh-keygen -lf -
+export BOXFERRY_DEPLOY_KNOWN_HOSTS
 ```
 
-The value stored in `BOXFERRY_DEPLOY_KNOWN_HOSTS` is the complete output line. It has this shape:
-
-```text
-[<host>]:<port> ssh-ed25519 AAAA...
-```
-
-Before storing it, compare its fingerprint with the key seen through the existing trusted
+Before storing the complete record in GitHub, compare its fingerprint with the key seen through the existing trusted
 administrator connection or with a fingerprint supplied by Hetzner. `ssh-keyscan` discovers a key;
 it does not prove that the key belongs to the intended server.
 
@@ -103,23 +116,20 @@ the local private files according to the project's credential-backup policy afte
 
 ## 3. Prepare the Hetzner server
 
-Update the local checkout, then export the same four connection values used in GitHub:
+Update the local checkout. Keep using the four exported connection values from step 1; if this is a
+new shell, collect them again before running the helper.
 
 ```console
 git switch main
 git pull --ff-only
-
-export BOXFERRY_DEPLOY_HOST=<host>
-export BOXFERRY_DEPLOY_PORT=<port>
-export BOXFERRY_DEPLOY_USER=<username>
-export BOXFERRY_DEPLOY_ROOT=/absolute/path/to/dev_boxferry
 ```
 
 If the administrator key is not selected by the SSH agent or normal SSH configuration, provide its
 local path:
 
 ```console
-export BOXFERRY_ADMIN_SSH_IDENTITY_FILE=/absolute/path/to/administrator-key
+read -r -p 'Administrator SSH identity file: ' BOXFERRY_ADMIN_SSH_IDENTITY_FILE
+export BOXFERRY_ADMIN_SSH_IDENTITY_FILE
 ```
 
 Run the preparation helper from the repository root:
@@ -169,7 +179,7 @@ deployment** on `main` with `bootstrap` once.
 
 Bootstrap still builds and validates the complete immutable site. It then uploads the artifact and
 asks the server updater to create and finalize the first release. It skips only public-origin checks
-because `boxferry.dev` cannot serve `current` yet.
+because the configured site origin cannot serve `current` yet.
 
 The server permits bootstrap only when release storage and all history links are empty. Repeating
 the same initial revision is safe. A later release cannot use bootstrap to bypass verification.
@@ -177,8 +187,9 @@ the same initial revision is safe. A later release cannot use bootstrap to bypas
 After success, confirm that the link exists through the administrator connection:
 
 ```console
-ssh <username>@<host> -p <port> \
-  'cd /absolute/path/to/dev_boxferry && ls -l current releases'
+ssh -p "${BOXFERRY_DEPLOY_PORT}" \
+  "${BOXFERRY_DEPLOY_USER}@${BOXFERRY_DEPLOY_HOST}" \
+  "cd -- '${BOXFERRY_DEPLOY_ROOT}' && ls -l current releases"
 ```
 
 If bootstrap reports non-empty release history, do not delete directories blindly. Inspect
@@ -188,16 +199,16 @@ If bootstrap reports non-empty release history, do not delete directories blindl
 
 In the Hetzner web interface:
 
-1. set the `boxferry.dev` document root to
-   `<absolute/path/to/dev_boxferry>/current`;
-2. point the domain's DNS records at the webspace;
-3. enable a valid TLS certificate for `boxferry.dev`.
+1. set the configured site's document root to `${BOXFERRY_DEPLOY_ROOT}/current`;
+2. point the configured site's DNS records at the webspace;
+3. enable a valid TLS certificate for the configured site origin.
 
 Check that Apache now serves the bootstrapped release:
 
 ```console
-curl --fail --silent --show-error --head https://boxferry.dev/
-curl --fail --silent --show-error https://boxferry.dev/assets/data/deployment.json
+boxferry_site_origin="${BOXFERRY_SITE_ORIGIN%/}"
+curl --fail --silent --show-error --head "${boxferry_site_origin}/"
+curl --fail --silent --show-error "${boxferry_site_origin}/assets/data/deployment.json"
 ```
 
 A 404 at this point normally means that the document root still points somewhere other than
@@ -235,13 +246,14 @@ then finalizes retention. A verification failure restores the complete previous 
 Inspect the retained revisions with the unrestricted administrator connection:
 
 ```console
-ssh <username>@<host> -p <port> \
-  'cd /absolute/path/to/dev_boxferry && ls -l current previous-1 previous-2 previous-3 previous-4'
+ssh -p "${BOXFERRY_DEPLOY_PORT}" \
+  "${BOXFERRY_DEPLOY_USER}@${BOXFERRY_DEPLOY_HOST}" \
+  "cd -- '${BOXFERRY_DEPLOY_ROOT}' && ls -l current previous-1 previous-2 previous-3 previous-4"
 ```
 
 Run **Production deployment** with `rollback` and enter the exact retained 40-character SHA. The
-workflow promotes that release, verifies it through `https://boxferry.dev`, and restores the prior
-links if verification fails.
+workflow promotes that release, verifies it through the configured site origin, and restores the
+prior links if verification fails.
 
 ## Rotate deployment keys
 

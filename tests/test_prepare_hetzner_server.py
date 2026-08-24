@@ -10,6 +10,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PREPARATION_SCRIPT = ROOT / "scripts" / "prepare-hetzner-server.sh"
+TEST_DEPLOYMENT_HOST = "deploy.example.test"
+TEST_DEPLOYMENT_PORT = "22022"
+TEST_DEPLOYMENT_USER = "boxferry-test"
+TEST_DEPLOYMENT_ROOT = "/srv/boxferry-test/releases"
 
 
 class HetznerServerPreparationTests(unittest.TestCase):
@@ -30,10 +34,10 @@ class HetznerServerPreparationTests(unittest.TestCase):
         self.environment.update(
             {
                 "PATH": f"{self.binary_directory}:{self.environment['PATH']}",
-                "BOXFERRY_DEPLOY_HOST": "www734.your-server.de",
-                "BOXFERRY_DEPLOY_PORT": "222",
-                "BOXFERRY_DEPLOY_USER": "c3diiy",
-                "BOXFERRY_DEPLOY_ROOT": "/usr/home/c3diiy/public_html/dev_boxferry",
+                "BOXFERRY_DEPLOY_HOST": TEST_DEPLOYMENT_HOST,
+                "BOXFERRY_DEPLOY_PORT": TEST_DEPLOYMENT_PORT,
+                "BOXFERRY_DEPLOY_USER": TEST_DEPLOYMENT_USER,
+                "BOXFERRY_DEPLOY_ROOT": TEST_DEPLOYMENT_ROOT,
                 "BOXFERRY_TEST_SSH_LOG": str(self.ssh_log),
                 "BOXFERRY_TEST_SCP_LOG": str(self.scp_log),
             }
@@ -81,7 +85,7 @@ class HetznerServerPreparationTests(unittest.TestCase):
         self.assertIn("<install -d -m 700", ssh_lines[0])
         self.assertIn("mv -f --", ssh_lines[1])
         self.assertIn("test ! -L", ssh_lines[1])
-        self.assertIn("<c3diiy@www734.your-server.de>", ssh_lines[0])
+        self.assertIn(f"<{TEST_DEPLOYMENT_USER}@{TEST_DEPLOYMENT_HOST}>", ssh_lines[0])
         self.assertIn(str(ROOT / "deployment" / "hetzner" / "version-updater.sh"), scp_line)
         self.assertIn("version-updater.sh.upload", scp_line)
 
@@ -103,6 +107,10 @@ class HetznerServerPreparationTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("BOXFERRY_DEPLOY_ROOT", result.stdout)
+
+    def test_connection_fixture_is_reserved_for_tests(self) -> None:
+        self.assertTrue(TEST_DEPLOYMENT_HOST.endswith(".test"))
+        self.assertTrue(TEST_DEPLOYMENT_ROOT.startswith("/srv/"))
 
     def test_every_required_value_is_enforced_before_ssh(self) -> None:
         for variable in (

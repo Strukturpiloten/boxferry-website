@@ -14,7 +14,7 @@ from scripts.render_authorized_keys import (
     validate_deployment_root,
 )
 
-ROOT = "/usr/www/users/c3diiy/dev_boxferry"
+ROOT = "/srv/boxferry-test/deployment"
 PUBLIC_KEY = "ssh-ed25519 " + "QUFB" * 12
 
 
@@ -39,10 +39,10 @@ class AuthorizedKeysTests(unittest.TestCase):
     def test_unsafe_deployment_roots_are_rejected(self) -> None:
         for value in (
             "relative/path",
-            "/usr/www/../etc",
-            "/usr/www/site;id",
-            "/usr/www/site with space",
-            '/usr/www/site"',
+            "/srv/boxferry/../etc",
+            "/srv/boxferry;id",
+            "/srv/boxferry with space",
+            '/srv/boxferry"',
         ):
             with self.subTest(value=value), self.assertRaises(AuthorizedKeysError):
                 validate_deployment_root(value)

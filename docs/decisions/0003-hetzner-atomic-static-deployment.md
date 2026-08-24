@@ -19,7 +19,7 @@ forced through `flock` to a repository-owned version updater. The updater valida
 revision, moves the staging directory into immutable `releases/<sha>/` storage, rotates four
 previous links from oldest to newest, and replaces `current` last.
 
-Serve `/absolute/path/to/dev_boxferry/current` through Apache. Retain `current` plus
+Serve the `current` link below the configured deployment root through Apache. Retain `current` plus
 `previous-1` through `previous-4`. Verify the public HTTPS revision and server policy after
 activation but before finalization; restore the complete saved link state on failure. Permit a
 retained release to be promoted through the same verified transaction.
