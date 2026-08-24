@@ -96,6 +96,7 @@ nav = [
 [project.theme]
 custom_dir = "overrides"
 favicon = "assets/images/favicon.svg"
+font = false
 logo = "assets/images/brand/generated/boxferry-mark-dark.svg"
 features = [
   "content.code.copy",

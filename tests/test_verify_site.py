@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.prepare_deployment import prepare_deployment
 from scripts.verify_site import (
     REQUIRED_ASSETS,
     REQUIRED_LINKS,
@@ -16,6 +17,8 @@ from scripts.verify_site import (
     SiteVerificationError,
     verify_site,
 )
+
+REVISION = "0123456789abcdef0123456789abcdef01234567"
 
 
 class SiteVerificationTests(unittest.TestCase):
@@ -88,6 +91,7 @@ class SiteVerificationTests(unittest.TestCase):
             '{"docs":[{"title":"BFC0001: compose-model-invalid"}]}\n',
             encoding="utf-8",
         )
+        prepare_deployment(self.site, revision=REVISION)
 
     def test_complete_site_passes(self) -> None:
         verify_site(self.site)
@@ -96,6 +100,45 @@ class SiteVerificationTests(unittest.TestCase):
         (self.site / REQUIRED_ROUTES[-1]).unlink()
 
         with self.assertRaisesRegex(SiteVerificationError, "required public routes are missing"):
+            verify_site(self.site)
+
+    def test_missing_apache_policy_fails(self) -> None:
+        (self.site / ".htaccess").unlink()
+
+        with self.assertRaisesRegex(SiteVerificationError, "Apache deployment policy is missing"):
+            verify_site(self.site)
+
+    def test_stale_apache_policy_fails(self) -> None:
+        (self.site / ".htaccess").write_text("Options Indexes\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(SiteVerificationError, "Apache deployment policy is stale"):
+            verify_site(self.site)
+
+    def test_invalid_release_manifest_fails(self) -> None:
+        (self.site / ".boxferry-release").write_text("revision=main\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(SiteVerificationError, "invalid contract"):
+            verify_site(self.site)
+
+    def test_mismatched_deployment_metadata_fails(self) -> None:
+        metadata = self.site / "assets" / "data" / "deployment.json"
+        metadata.write_text(
+            json.dumps({"schema_version": 1, "website_revision": "f" * 40}),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(SiteVerificationError, "does not match"):
+            verify_site(self.site)
+
+    def test_remote_font_resource_fails(self) -> None:
+        homepage = self.site / "index.html"
+        homepage.write_text(
+            homepage.read_text(encoding="utf-8")
+            + '<link href="https://fonts.googleapis.com/css?family=Inter">\n',
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(SiteVerificationError, "forbidden path fragment"):
             verify_site(self.site)
 
     def test_missing_brand_asset_fails(self) -> None:

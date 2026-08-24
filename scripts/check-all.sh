@@ -10,7 +10,7 @@ cd -- "${repository_root}"
 
 current_step="preflight"
 step=0
-readonly total_steps=17
+readonly total_steps=18
 
 fail() {
   printf 'BoxFerry website local validation failed: %s\n' "$1" >&2
@@ -102,6 +102,8 @@ run_step "Assemble documentation" uv run --frozen python scripts/assemble_docs.p
 run_step "Build the static site with warnings denied" uv run --frozen zensical build --clean --strict
 run_step "Build first-party Rust API documentation" \
   uv run --frozen python scripts/build_rustdoc.py --source-mode "${source_mode}"
+run_step "Prepare the immutable deployment artifact" \
+  uv run --frozen python scripts/prepare_deployment.py
 run_step "Verify public routes and privacy boundaries" uv run --frozen python scripts/verify_site.py
 
 # The homepage links to assembled documentation routes that exist only in the generated site.

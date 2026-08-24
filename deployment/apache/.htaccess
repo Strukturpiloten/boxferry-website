@@ -1,0 +1,33 @@
+# BoxFerry static-site policy. This file is copied into every generated release.
+
+Options -Indexes
+DirectoryIndex index.html
+
+AddDefaultCharset UTF-8
+AddType text/css .css
+AddType text/html .html
+AddType text/javascript .js .mjs
+AddType application/json .json
+AddType image/svg+xml .svg
+AddType text/markdown .md
+AddType text/plain .txt .toml
+AddType font/woff2 .woff2
+AddCharset UTF-8 .css .html .js .json .md .mjs .svg .toml .txt
+
+<Files ".boxferry-release">
+  Require all denied
+</Files>
+
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "base-uri 'self'; connect-src 'self'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; manifest-src 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
+  Header always set Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set X-Permitted-Cross-Domain-Policies "none"
+
+  <FilesMatch "\.(?:html|json|md|toml|txt)$">
+    Header always set Cache-Control "no-cache, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>

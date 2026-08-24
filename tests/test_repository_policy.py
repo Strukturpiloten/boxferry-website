@@ -27,6 +27,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(project["docs_dir"], ".generated/docs")
         self.assertEqual(project["site_dir"], "site")
         self.assertEqual(project["repo_url"], "https://github.com/Strukturpiloten/boxferry")
+        self.assertFalse(project["theme"]["font"])
         self.assertEqual(project["theme"]["palette"][0]["scheme"], "slate")
         self.assertEqual(project["theme"]["palette"][1]["scheme"], "default")
         self.assertIn("navigation.indexes", project["theme"]["features"])
@@ -372,6 +373,30 @@ class RepositoryPolicyTests(unittest.TestCase):
                 with self.subTest(workflow=workflow.name, line=line):
                     self.assertRegex(line, ACTION_PATTERN)
 
+    def test_deployment_workflow_preserves_static_release_contract(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+
+        for expected in (
+            "show-authorized-keys",
+            "deploy",
+            "rollback",
+            "name: production",
+            "scripts/prepare-deployment-keys.sh",
+            "./scripts/check-all.sh",
+            "BOXFERRY_RSYNC_SSH_PRIVATE_KEY",
+            "BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY",
+            "BOXFERRY_DEPLOY_KNOWN_HOSTS",
+            "BOXFERRY_SITE_ORIGIN",
+            "rsync -rlptz --delete --safe-links",
+            "activate %s %s",
+            "finalize %s",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, workflow)
+
+        self.assertIn("include-hidden-files: true", workflow)
+        self.assertNotIn("pull_request:", workflow)
+
     def test_literal_colors_are_centralized(self) -> None:
         token_file = ROOT / "content" / "assets" / "stylesheets" / "tokens.css"
         generated_assets = {ROOT / path for path in GENERATED_ASSET_PATHS}
@@ -425,6 +450,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             "assemble_docs.py",
             "zensical build",
             "build_rustdoc.py",
+            "prepare_deployment.py",
             "verify_site.py",
             '[[ -f "${markdown_file}" ]]',
             "lychee",

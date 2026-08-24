@@ -1,0 +1,354 @@
+---
+name: Production deployment
+run-name: Production ${{ inputs.operation }} at ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Print restricted keys or deploy the current main revision
+        type: choice
+        required: true
+        default: show-authorized-keys
+        options:
+          - show-authorized-keys
+          - deploy
+          - rollback
+      revision:
+        description: Exact retained website revision required by rollback
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxferry.dev-production
+  cancel-in-progress: false
+
+jobs:
+  request:
+    name: Validate production request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require the default branch
+        env:
+          REQUESTED_OPERATION: ${{ inputs.operation }}
+          REQUESTED_REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            printf 'Production operation %s must run from main, not %s.\n' \
+              "${REQUESTED_OPERATION}" "${GITHUB_REF}" >&2
+            exit 1
+          fi
+          if [[ "${REQUESTED_OPERATION}" == rollback ]]; then
+            if [[ ! "${REQUESTED_REVISION}" =~ ^[0-9a-f]{40}$ ]]; then
+              printf 'Rollback requires an exact 40-character lowercase revision.\n' >&2
+              exit 1
+            fi
+          elif [[ -n "${REQUESTED_REVISION}" ]]; then
+            printf 'Revision input is accepted only for rollback.\n' >&2
+            exit 1
+          fi
+
+  show-authorized-keys:
+    name: Show restricted SSH key entries
+    if: inputs.operation == 'show-authorized-keys'
+    needs: [request]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment:
+      name: production
+      url: https://boxferry.dev/
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Derive and print restricted authorized_keys entries
+        env:
+          BOXFERRY_DEPLOY_ROOT: ${{ vars.BOXFERRY_DEPLOY_ROOT }}
+          BOXFERRY_RSYNC_SSH_PRIVATE_KEY: ${{ secrets.BOXFERRY_RSYNC_SSH_PRIVATE_KEY }}
+          BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY: >-
+            ${{ secrets.BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY }}
+        run: ./scripts/prepare-deployment-keys.sh
+
+  build:
+    name: Build immutable static release
+    if: inputs.operation == 'deploy'
+    needs: [request]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned Node.js toolchain
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # renovate: datasource=node-version depName=node
+          node-version: 24.18.1
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install pinned uv toolchain
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          # renovate: datasource=github-releases depName=astral-sh/uv
+          version: "0.12.5"
+      - name: Install checksum-pinned native file-quality tools
+        run: sudo bash scripts/install-file-tools.sh /usr/local/bin
+      - name: Install pinned Lychee
+        # renovate: datasource=crate depName=lychee
+        run: cargo install --locked --version 0.24.2 lychee
+      - name: Build and validate exact locked documentation revisions
+        env:
+          BOXFERRY_WEBSITE_FORMAT_MODE: check
+          BOXFERRY_WEBSITE_SOURCE_MODE: locked
+        run: ./scripts/check-all.sh
+      - name: Upload immutable static release
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: boxferry-site-${{ github.sha }}
+          path: site/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+
+  deploy:
+    name: Activate Hetzner release
+    if: inputs.operation == 'deploy'
+    needs: [build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://boxferry.dev/
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download immutable static release
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: boxferry-site-${{ github.sha }}
+          path: site
+      - name: Derive and print restricted authorized_keys entries
+        env:
+          BOXFERRY_DEPLOY_ROOT: ${{ vars.BOXFERRY_DEPLOY_ROOT }}
+          BOXFERRY_RSYNC_SSH_PRIVATE_KEY: ${{ secrets.BOXFERRY_RSYNC_SSH_PRIVATE_KEY }}
+          BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY: >-
+            ${{ secrets.BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY }}
+        run: ./scripts/prepare-deployment-keys.sh
+      - name: Pin the Hetzner SSH host identity
+        env:
+          BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}
+          BOXFERRY_DEPLOY_KNOWN_HOSTS: ${{ vars.BOXFERRY_DEPLOY_KNOWN_HOSTS }}
+          BOXFERRY_DEPLOY_PORT: ${{ vars.BOXFERRY_DEPLOY_PORT }}
+          BOXFERRY_DEPLOY_USER: ${{ vars.BOXFERRY_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          [[ "${BOXFERRY_DEPLOY_HOST}" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "${BOXFERRY_DEPLOY_USER}" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "${BOXFERRY_DEPLOY_PORT}" =~ ^[0-9]+$ ]]
+          ((BOXFERRY_DEPLOY_PORT > 0 && BOXFERRY_DEPLOY_PORT <= 65535))
+          [[ -n "${BOXFERRY_DEPLOY_KNOWN_HOSTS}" ]]
+          keys_directory="${RUNNER_TEMP}/boxferry-deployment-keys"
+          printf '%s\n' "${BOXFERRY_DEPLOY_KNOWN_HOSTS}" > "${keys_directory}/known_hosts"
+          chmod 600 "${keys_directory}/known_hosts"
+          ssh-keygen -F "[${BOXFERRY_DEPLOY_HOST}]:${BOXFERRY_DEPLOY_PORT}" \
+            -f "${keys_directory}/known_hosts" > /dev/null
+      - name: Upload, activate, verify, and finalize
+        env:
+          BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}
+          BOXFERRY_DEPLOY_PORT: ${{ vars.BOXFERRY_DEPLOY_PORT }}
+          BOXFERRY_DEPLOY_USER: ${{ vars.BOXFERRY_DEPLOY_USER }}
+          BOXFERRY_SITE_ORIGIN: ${{ vars.BOXFERRY_SITE_ORIGIN }}
+        run: |
+          set -Eeuo pipefail
+          [[ "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev" || \
+            "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev/" ]]
+
+          keys_directory="${RUNNER_TEMP}/boxferry-deployment-keys"
+          remote="${BOXFERRY_DEPLOY_USER}@${BOXFERRY_DEPLOY_HOST}"
+          staging_name="${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          known_hosts="${keys_directory}/known_hosts"
+          updater_key="${keys_directory}/version-updater"
+          ssh_options=(
+            -T
+            -p "${BOXFERRY_DEPLOY_PORT}"
+            -o BatchMode=yes
+            -o ConnectTimeout=15
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=${known_hosts}"
+          )
+          rsync_shell="ssh -i ${keys_directory}/rsync -p ${BOXFERRY_DEPLOY_PORT}"
+          rsync_shell+=" -o BatchMode=yes -o ConnectTimeout=15 -o IdentitiesOnly=yes"
+          rsync_shell+=" -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${known_hosts}"
+
+          rsync -rlptz --delete --safe-links --chmod=D755,F644 \
+            -e "${rsync_shell}" site/ "${remote}:${staging_name}/"
+
+          activated=false
+          rollback_on_error() {
+            local status=$?
+            trap - ERR
+            if [[ "${activated}" == true ]]; then
+              printf 'rollback %s\n' "${GITHUB_SHA}" | \
+                ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}" || \
+                printf 'Automatic rollback failed; manual recovery is required.\n' >&2
+            fi
+            exit "${status}"
+          }
+          trap rollback_on_error ERR
+
+          printf 'activate %s %s\n' "${GITHUB_SHA}" "${staging_name}" | \
+            ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
+          activated=true
+
+          origin="${BOXFERRY_SITE_ORIGIN%/}"
+          metadata="$(curl --fail --silent --show-error --location \
+            --retry 5 --retry-all-errors --connect-timeout 10 --max-time 30 \
+            "${origin}/assets/data/deployment.json?revision=${GITHUB_SHA}")"
+          # revision is a jq variable, not a shell variable.
+          # shellcheck disable=SC2016
+          jq -e --arg revision "${GITHUB_SHA}" \
+            '.schema_version == 1 and .website_revision == $revision' \
+            <<< "${metadata}" > /dev/null
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
+            --output /dev/null "${origin}/?revision=${GITHUB_SHA}"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
+            --output /dev/null "${origin}/docs/?revision=${GITHUB_SHA}"
+
+          headers="$(curl --fail --silent --show-error --head "${origin}/")"
+          grep -Fqi 'content-security-policy:' <<< "${headers}"
+          grep -Fqi 'strict-transport-security:' <<< "${headers}"
+          grep -Fqi 'x-content-type-options: nosniff' <<< "${headers}"
+          [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "${origin}/.boxferry-release")" == 403 ]]
+          [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "${origin}/assets/data/")" == 403 ]]
+
+          activated=false
+          printf 'finalize %s\n' "${GITHUB_SHA}" | \
+            ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
+          trap - ERR
+          printf 'Published verified BoxFerry release %s.\n' "${GITHUB_SHA}"
+          # Markdown backticks are literal, not command substitutions.
+          # shellcheck disable=SC2016
+          printf '## Production deployment\n\nPublished and verified `%s` at %s.\n' \
+            "${GITHUB_SHA}" "${BOXFERRY_SITE_ORIGIN}" >> "${GITHUB_STEP_SUMMARY}"
+
+  rollback:
+    name: Promote retained Hetzner release
+    if: inputs.operation == 'rollback'
+    needs: [request]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://boxferry.dev/
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Derive and print restricted authorized_keys entries
+        env:
+          BOXFERRY_DEPLOY_ROOT: ${{ vars.BOXFERRY_DEPLOY_ROOT }}
+          BOXFERRY_RSYNC_SSH_PRIVATE_KEY: ${{ secrets.BOXFERRY_RSYNC_SSH_PRIVATE_KEY }}
+          BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY: >-
+            ${{ secrets.BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY }}
+        run: ./scripts/prepare-deployment-keys.sh
+      - name: Pin the Hetzner SSH host identity
+        env:
+          BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}
+          BOXFERRY_DEPLOY_KNOWN_HOSTS: ${{ vars.BOXFERRY_DEPLOY_KNOWN_HOSTS }}
+          BOXFERRY_DEPLOY_PORT: ${{ vars.BOXFERRY_DEPLOY_PORT }}
+          BOXFERRY_DEPLOY_USER: ${{ vars.BOXFERRY_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          [[ "${BOXFERRY_DEPLOY_HOST}" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "${BOXFERRY_DEPLOY_USER}" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "${BOXFERRY_DEPLOY_PORT}" =~ ^[0-9]+$ ]]
+          ((BOXFERRY_DEPLOY_PORT > 0 && BOXFERRY_DEPLOY_PORT <= 65535))
+          [[ -n "${BOXFERRY_DEPLOY_KNOWN_HOSTS}" ]]
+          keys_directory="${RUNNER_TEMP}/boxferry-deployment-keys"
+          printf '%s\n' "${BOXFERRY_DEPLOY_KNOWN_HOSTS}" > "${keys_directory}/known_hosts"
+          chmod 600 "${keys_directory}/known_hosts"
+          ssh-keygen -F "[${BOXFERRY_DEPLOY_HOST}]:${BOXFERRY_DEPLOY_PORT}" \
+            -f "${keys_directory}/known_hosts" > /dev/null
+      - name: Promote, verify, and finalize the retained release
+        env:
+          BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}
+          BOXFERRY_DEPLOY_PORT: ${{ vars.BOXFERRY_DEPLOY_PORT }}
+          BOXFERRY_DEPLOY_USER: ${{ vars.BOXFERRY_DEPLOY_USER }}
+          BOXFERRY_SITE_ORIGIN: ${{ vars.BOXFERRY_SITE_ORIGIN }}
+          BOXFERRY_ROLLBACK_REVISION: ${{ inputs.revision }}
+        run: |
+          set -Eeuo pipefail
+          [[ "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev" || \
+            "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev/" ]]
+
+          keys_directory="${RUNNER_TEMP}/boxferry-deployment-keys"
+          remote="${BOXFERRY_DEPLOY_USER}@${BOXFERRY_DEPLOY_HOST}"
+          updater_key="${keys_directory}/version-updater"
+          ssh_options=(
+            -T
+            -p "${BOXFERRY_DEPLOY_PORT}"
+            -o BatchMode=yes
+            -o ConnectTimeout=15
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=${keys_directory}/known_hosts"
+          )
+
+          promoted=false
+          rollback_on_error() {
+            local status=$?
+            trap - ERR
+            if [[ "${promoted}" == true ]]; then
+              printf 'rollback %s\n' "${BOXFERRY_ROLLBACK_REVISION}" | \
+                ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}" || \
+                printf 'Automatic rollback failed; manual recovery is required.\n' >&2
+            fi
+            exit "${status}"
+          }
+          trap rollback_on_error ERR
+
+          printf 'promote %s\n' "${BOXFERRY_ROLLBACK_REVISION}" | \
+            ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
+          promoted=true
+
+          origin="${BOXFERRY_SITE_ORIGIN%/}"
+          metadata="$(curl --fail --silent --show-error --location \
+            --retry 5 --retry-all-errors --connect-timeout 10 --max-time 30 \
+            "${origin}/assets/data/deployment.json?revision=${BOXFERRY_ROLLBACK_REVISION}")"
+          # revision is a jq variable, not a shell variable.
+          # shellcheck disable=SC2016
+          jq -e --arg revision "${BOXFERRY_ROLLBACK_REVISION}" \
+            '.schema_version == 1 and .website_revision == $revision' \
+            <<< "${metadata}" > /dev/null
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
+            --output /dev/null "${origin}/docs/?revision=${BOXFERRY_ROLLBACK_REVISION}"
+          headers="$(curl --fail --silent --show-error --head "${origin}/")"
+          grep -Fqi 'content-security-policy:' <<< "${headers}"
+          grep -Fqi 'strict-transport-security:' <<< "${headers}"
+          grep -Fqi 'x-content-type-options: nosniff' <<< "${headers}"
+
+          promoted=false
+          printf 'finalize %s\n' "${BOXFERRY_ROLLBACK_REVISION}" | \
+            ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
+          trap - ERR
+          printf 'Promoted verified BoxFerry release %s.\n' "${BOXFERRY_ROLLBACK_REVISION}"
+          # Markdown backticks are literal, not command substitutions.
+          # shellcheck disable=SC2016
+          printf '## Production rollback\n\nPromoted and verified `%s` at %s.\n' \
+            "${BOXFERRY_ROLLBACK_REVISION}" "${BOXFERRY_SITE_ORIGIN}" \
+            >> "${GITHUB_STEP_SUMMARY}"

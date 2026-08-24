@@ -9,6 +9,11 @@ import re
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+APACHE_POLICY = ROOT / "deployment" / "apache" / ".htaccess"
+DEPLOYMENT_METADATA = Path("assets/data/deployment.json")
+RELEASE_MANIFEST = Path(".boxferry-release")
+
 REQUIRED_ROUTES = (
     "index.html",
     "legal-notice/index.html",
@@ -90,6 +95,8 @@ FORBIDDEN_FRAGMENTS = (
     "/workspaces/",
     "temp/documentation-plan.md",
     "documentation-plan.md",
+    "fonts.googleapis.com",
+    "fonts.gstatic.com",
 )
 
 
@@ -108,6 +115,35 @@ SOURCE_REPOSITORIES = (
 
 class SiteVerificationError(RuntimeError):
     """Describe an incomplete or privacy-unsafe static site."""
+
+
+def _verify_deployment_artifacts(site: Path) -> None:
+    policy = site / ".htaccess"
+    if not policy.is_file():
+        raise SiteVerificationError("Apache deployment policy is missing")
+    if policy.read_text(encoding="utf-8") != APACHE_POLICY.read_text(encoding="utf-8"):
+        raise SiteVerificationError("Apache deployment policy is stale")
+
+    manifest = site / RELEASE_MANIFEST
+    try:
+        manifest_lines = manifest.read_text(encoding="utf-8").splitlines()
+    except OSError as error:
+        raise SiteVerificationError("release manifest is missing") from error
+    if len(manifest_lines) != 2 or manifest_lines[0] != "schema-version=1":
+        raise SiteVerificationError("release manifest has an invalid contract")
+    prefix = "revision="
+    if not manifest_lines[1].startswith(prefix):
+        raise SiteVerificationError("release manifest has no website revision")
+    revision = manifest_lines[1][len(prefix) :]
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise SiteVerificationError("release manifest revision is invalid")
+
+    try:
+        metadata = json.loads((site / DEPLOYMENT_METADATA).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise SiteVerificationError("deployment metadata is missing or invalid") from error
+    if metadata != {"schema_version": 1, "website_revision": revision}:
+        raise SiteVerificationError("deployment metadata does not match the release manifest")
 
 
 def _verify_rule_routes_and_search(site: Path) -> None:
@@ -145,6 +181,8 @@ def verify_site(site_directory: Path) -> None:
     site = site_directory.resolve()
     if not site.is_dir():
         raise SiteVerificationError(f"site directory does not exist: {site_directory}")
+
+    _verify_deployment_artifacts(site)
 
     missing = [route for route in REQUIRED_ROUTES if not (site / route).is_file()]
     if missing:
