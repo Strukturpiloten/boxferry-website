@@ -30,7 +30,7 @@ You need:
 - `/usr/bin/rrsync` and `/usr/bin/flock` on Hetzner.
 
 The Hetzner account must allow an Apache document root below
-`/usr/home/c3diiy/public_html/dev_boxferry`. Apache must honor the tracked `.htaccess` rules.
+`/absolute/path/to/dev_boxferry`. Apache must honor the tracked `.htaccess` rules.
 
 ## 1. Create the GitHub environment
 
@@ -44,27 +44,27 @@ Configure the environment to:
 
 Create these environment variables, not repository-level variables:
 
-| Variable                      | Value                                         |
-| ----------------------------- | --------------------------------------------- |
-| `BOXFERRY_DEPLOY_HOST`        | `www734.your-server.de`                       |
-| `BOXFERRY_DEPLOY_PORT`        | `222`                                         |
-| `BOXFERRY_DEPLOY_USER`        | `c3diiy`                                      |
-| `BOXFERRY_DEPLOY_ROOT`        | `/usr/home/c3diiy/public_html/dev_boxferry`   |
-| `BOXFERRY_SITE_ORIGIN`        | `https://boxferry.dev`                        |
-| `BOXFERRY_DEPLOY_KNOWN_HOSTS` | One complete, verified SSH known-hosts record |
+| Variable                      | Value                                     |
+| ----------------------------- | ----------------------------------------- |
+| `BOXFERRY_DEPLOY_HOST`        | `<host>`                                  |
+| `BOXFERRY_DEPLOY_PORT`        | `<port>`                                  |
+| `BOXFERRY_DEPLOY_USER`        | `<username>`                              |
+| `BOXFERRY_DEPLOY_ROOT`        | `/absolute/path/to/dev_boxferry`          |
+| `BOXFERRY_SITE_ORIGIN`        | `https://boxferry.dev`                    |
+| `BOXFERRY_DEPLOY_KNOWN_HOSTS` | `ssh-keyscan -p <port> -t ed25519 <host>` |
 
 ### Verify the SSH host record
 
 Collect the server's Ed25519 host record:
 
 ```console
-ssh-keyscan -p 222 -t ed25519 www734.your-server.de
+ssh-keyscan -p <port> -t ed25519 <host>
 ```
 
 The value stored in `BOXFERRY_DEPLOY_KNOWN_HOSTS` is the complete output line. It has this shape:
 
 ```text
-[www734.your-server.de]:222 ssh-ed25519 AAAA...
+[<host>]:<port> ssh-ed25519 AAAA...
 ```
 
 Before storing it, compare its fingerprint with the key seen through the existing trusted
@@ -109,10 +109,10 @@ Update the local checkout, then export the same four connection values used in G
 git switch main
 git pull --ff-only
 
-export BOXFERRY_DEPLOY_HOST=www734.your-server.de
-export BOXFERRY_DEPLOY_PORT=222
-export BOXFERRY_DEPLOY_USER=c3diiy
-export BOXFERRY_DEPLOY_ROOT=/usr/home/c3diiy/public_html/dev_boxferry
+export BOXFERRY_DEPLOY_HOST=<host>
+export BOXFERRY_DEPLOY_PORT=<port>
+export BOXFERRY_DEPLOY_USER=<username>
+export BOXFERRY_DEPLOY_ROOT=/absolute/path/to/dev_boxferry
 ```
 
 If the administrator key is not selected by the SSH agent or normal SSH configuration, provide its
@@ -177,8 +177,8 @@ the same initial revision is safe. A later release cannot use bootstrap to bypas
 After success, confirm that the link exists through the administrator connection:
 
 ```console
-ssh c3diiy@www734.your-server.de -p 222 \
-  'cd /usr/home/c3diiy/public_html/dev_boxferry && ls -l current releases'
+ssh <username>@<host> -p <port> \
+  'cd /absolute/path/to/dev_boxferry && ls -l current releases'
 ```
 
 If bootstrap reports non-empty release history, do not delete directories blindly. Inspect
@@ -189,7 +189,7 @@ If bootstrap reports non-empty release history, do not delete directories blindl
 In the Hetzner web interface:
 
 1. set the `boxferry.dev` document root to
-   `/usr/home/c3diiy/public_html/dev_boxferry/current`;
+   `<absolute/path/to/dev_boxferry>/current`;
 2. point the domain's DNS records at the webspace;
 3. enable a valid TLS certificate for `boxferry.dev`.
 
@@ -235,8 +235,8 @@ then finalizes retention. A verification failure restores the complete previous 
 Inspect the retained revisions with the unrestricted administrator connection:
 
 ```console
-ssh c3diiy@www734.your-server.de -p 222 \
-  'cd /usr/home/c3diiy/public_html/dev_boxferry && ls -l current previous-1 previous-2 previous-3 previous-4'
+ssh <username>@<host> -p <port> \
+  'cd /absolute/path/to/dev_boxferry && ls -l current previous-1 previous-2 previous-3 previous-4'
 ```
 
 Run **Production deployment** with `rollback` and enter the exact retained 40-character SHA. The
