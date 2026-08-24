@@ -531,7 +531,8 @@ def _verify_public_content(staging: Path) -> None:
         relative = path.relative_to(staging)
         if len(re.findall(r"(?u)\b[\w'-]+\b", text)) > PUBLIC_PAGE_WORD_LIMIT:
             raise AssemblyError(f"public page exceeds {PUBLIC_PAGE_WORD_LIMIT} words: {relative}")
-        if sum(line.startswith("# ") for line in text.splitlines()) != 1:
+        without_code = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+        if sum(line.startswith("# ") for line in without_code.splitlines()) != 1:
             raise AssemblyError(
                 f"public page must contain exactly one level-one heading: {relative}"
             )
@@ -542,7 +543,6 @@ def _verify_public_content(staging: Path) -> None:
                     f"public page contains placeholder phrase `{phrase}`: {relative}"
                 )
 
-        without_code = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
         for paragraph in re.split(r"\n\s*\n", without_code):
             stripped = paragraph.strip()
             if not stripped or stripped.startswith(("#", "-", "|", "<")):

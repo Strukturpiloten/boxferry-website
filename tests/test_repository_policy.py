@@ -31,6 +31,10 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(project["theme"]["palette"][0]["scheme"], "slate")
         self.assertEqual(project["theme"]["palette"][1]["scheme"], "default")
         self.assertIn("navigation.indexes", project["theme"]["features"])
+        self.assertIn("navigation.tabs", project["theme"]["features"])
+        self.assertIn("navigation.tabs.sticky", project["theme"]["features"])
+        self.assertEqual(project["markdown_extensions"]["pymdownx"]["details"], {})
+        self.assertEqual([next(iter(item)) for item in project["nav"]], ["Docs", "Support"])
 
         custom_dir = project["theme"].get("custom_dir")
         if custom_dir is not None:
@@ -56,9 +60,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         with (ROOT / "zensical.toml").open("rb") as handle:
             navigation = tomllib.load(handle)["project"]["nav"]
 
-        documentation = next(
-            item["Documentation"] for item in navigation if "Documentation" in item
-        )
+        documentation = next(item["Docs"] for item in navigation if "Docs" in item)
         guides = next(
             item["Guides"] for item in documentation if isinstance(item, dict) and "Guides" in item
         )
@@ -71,24 +73,24 @@ class RepositoryPolicyTests(unittest.TestCase):
                     "Compose input": [
                         "docs/guides/compose-input/index.md",
                         {"Compose output": "docs/guides/convert/compose-to-compose/index.md"},
-                        {"Quadlet output": "docs/guides/convert/compose-to-quadlet/index.md"},
                         {"Podman output": "docs/guides/convert/compose-to-podman/index.md"},
-                    ]
-                },
-                {
-                    "Quadlet input": [
-                        "docs/guides/quadlet-input/index.md",
-                        {"Compose output": "docs/guides/convert/quadlet-to-compose/index.md"},
-                        {"Quadlet output": "docs/guides/convert/quadlet-to-quadlet/index.md"},
-                        {"Podman output": "docs/guides/convert/quadlet-to-podman/index.md"},
+                        {"Quadlet output": "docs/guides/convert/compose-to-quadlet/index.md"},
                     ]
                 },
                 {
                     "Podman input": [
                         "docs/guides/podman-input/index.md",
                         {"Compose output": "docs/guides/convert/podman-to-compose/index.md"},
-                        {"Quadlet output": "docs/guides/convert/podman-to-quadlet/index.md"},
                         {"Podman output": "docs/guides/convert/podman-to-podman/index.md"},
+                        {"Quadlet output": "docs/guides/convert/podman-to-quadlet/index.md"},
+                    ]
+                },
+                {
+                    "Quadlet input": [
+                        "docs/guides/quadlet-input/index.md",
+                        {"Compose output": "docs/guides/convert/quadlet-to-compose/index.md"},
+                        {"Podman output": "docs/guides/convert/quadlet-to-podman/index.md"},
+                        {"Quadlet output": "docs/guides/convert/quadlet-to-quadlet/index.md"},
                     ]
                 },
             ],
@@ -98,9 +100,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         with (ROOT / "zensical.toml").open("rb") as handle:
             navigation = tomllib.load(handle)["project"]["nav"]
 
-        documentation = next(
-            item["Documentation"] for item in navigation if "Documentation" in item
-        )
+        documentation = next(item["Docs"] for item in navigation if "Docs" in item)
         libraries = next(
             item["Libraries"]
             for item in documentation
@@ -199,6 +199,25 @@ class RepositoryPolicyTests(unittest.TestCase):
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, assembler)
+
+    def test_presentation_entry_points_are_documented_and_regression_checked(self) -> None:
+        homepage = (ROOT / "content" / "index.md").read_text(encoding="utf-8")
+        site_css = (ROOT / "content" / "assets" / "stylesheets" / "site.css").read_text(
+            encoding="utf-8"
+        )
+        customization = (ROOT / "docs" / "customization.md").read_text(encoding="utf-8")
+
+        self.assertIn('href="docs/guides/"', homepage)
+        self.assertRegex(site_css, r"(?s)\.md-grid\s*\{\s*max-width:\s*88rem;")
+        for expected in (
+            "zensical.toml",
+            "content/assets/stylesheets/site.css",
+            "content/assets/stylesheets/tokens.css",
+            "content/assets/images/brand/",
+            "scripts/generate_brand_assets.py",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, customization)
 
     def test_lenses_own_library_pages_and_first_party_rustdoc(self) -> None:
         with (ROOT / "documentation-sources.toml").open("rb") as handle:

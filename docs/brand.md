@@ -59,6 +59,9 @@ legibility in both site themes.
 type scale, spacing, radius, shadow, icon-size, motion-duration, and easing tokens. Site styles use
 those tokens rather than maintaining a second design system.
 
+For the exact navigation, content-width, color, and logo entry points, use
+[`customization.md`](customization.md).
+
 Dark mode is the first-visit default. Light mode remains explicitly selectable. The maintained
 contrast contract is:
 

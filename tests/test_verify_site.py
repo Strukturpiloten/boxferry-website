@@ -12,7 +12,9 @@ from scripts.verify_site import (
     REQUIRED_ASSETS,
     REQUIRED_LINKS,
     REQUIRED_ROUTES,
+    REQUIRED_SUPPORT_LINKS,
     RUSTDOC_ROUTES,
+    SOURCE_MANIFEST_LINK,
     SOURCE_REPOSITORIES,
     SiteVerificationError,
     verify_site,
@@ -31,7 +33,10 @@ class SiteVerificationTests(unittest.TestCase):
         for route in REQUIRED_ROUTES:
             path = self.site / route
             path.parent.mkdir(parents=True, exist_ok=True)
-            links = "".join(f'<a href="{link}"></a>' for link in REQUIRED_LINKS)
+            links = "".join(
+                f'<a href="{link}"></a>'
+                for link in (*REQUIRED_LINKS, *REQUIRED_SUPPORT_LINKS, SOURCE_MANIFEST_LINK)
+            )
             path.write_text(f"<!doctype html><title>BoxFerry</title>{links}\n", encoding="utf-8")
         for asset in REQUIRED_ASSETS:
             path = self.site / asset
@@ -155,6 +160,26 @@ class SiteVerificationTests(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(SiteVerificationError, "required public links are missing"):
+            verify_site(self.site)
+
+    def test_missing_support_link_fails(self) -> None:
+        support = self.site / "support" / "index.html"
+        support.write_text(
+            support.read_text(encoding="utf-8").replace(REQUIRED_SUPPORT_LINKS[0], ""),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(SiteVerificationError, "required support links are missing"):
+            verify_site(self.site)
+
+    def test_missing_source_metadata_link_fails(self) -> None:
+        sources = self.site / "docs" / "sources" / "index.html"
+        sources.write_text(
+            sources.read_text(encoding="utf-8").replace(SOURCE_MANIFEST_LINK, ""),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(SiteVerificationError, "does not link to source metadata"):
             verify_site(self.site)
 
     def test_host_path_disclosure_fails(self) -> None:

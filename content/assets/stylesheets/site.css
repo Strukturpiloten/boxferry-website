@@ -1,3 +1,7 @@
+.md-grid {
+  max-width: 88rem;
+}
+
 .bf-home {
   display: grid;
   gap: var(--bf-space-8);
@@ -97,6 +101,10 @@
 
 .bf-command pre {
   margin: 0;
+}
+
+.bf-route-link {
+  margin-top: var(--bf-space-3);
 }
 
 .bf-grid {

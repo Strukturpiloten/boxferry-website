@@ -53,6 +53,9 @@ Read [`content-guidelines.md`](content-guidelines.md) before adding a public pag
 and executable examples stay in the repository that owns the behavior. The website owns assembly,
 shared navigation, presentation, and generated rule pages.
 
+Use [`customization.md`](customization.md) for the exact navigation, content-width, color-token, and
+logo entry points.
+
 After changing a displayed BoxFerry command, update its entry in
 `boxferry/docs/documentation-examples.toml` and run BoxFerry's complete gate before updating the
 website revision pin.
