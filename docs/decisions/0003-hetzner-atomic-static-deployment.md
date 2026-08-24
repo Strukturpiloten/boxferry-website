@@ -40,6 +40,10 @@ Store private keys only as protected GitHub environment secrets. Derive and prin
 and complete restricted `authorized_keys` entries on every authorized run. Pin the SSH host key and
 restrict deployment operations to `main` and the `production` environment.
 
+After bootstrap, start publication automatically only when a push-triggered `CI` run on `main`
+completes successfully. Use the triggering run's exact commit rather than the latest branch state.
+Retain manual deployment and rollback operations for operators.
+
 ## Consequences
 
 - Public requests see either the complete old release or the complete new release.
@@ -52,3 +56,5 @@ restrict deployment operations to `main` and the `production` environment.
   changes.
 - The first publication is a narrowly server-enforced bootstrap; all later publications require
   public HTTPS and Apache verification.
+- A required environment reviewer intentionally turns automatic publication into an
+  approval-gated publication.

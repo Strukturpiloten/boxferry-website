@@ -151,7 +151,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         boxferry = next(
             repository for repository in repositories if repository["name"] == "boxferry"
         )
-        self.assertEqual(boxferry["revision"], "de2b52dd51615c74a672f6e9265c7f35472326a5")
+        self.assertRegex(boxferry["revision"], r"\A[0-9a-f]{40}\Z")
         mappings = {
             (document["source"], document["destination"]) for document in boxferry["documents"]
         }
@@ -208,6 +208,9 @@ class RepositoryPolicyTests(unittest.TestCase):
             [repository["name"] for repository in repositories],
             ["boxferry", "compose-lens", "podman-lens", "quadlet-lens"],
         )
+        for repository in repositories:
+            with self.subTest(repository=repository["name"]):
+                self.assertRegex(repository["revision"], r"\A[0-9a-f]{40}\Z")
 
         compose = next(
             repository for repository in repositories if repository["name"] == "compose-lens"
@@ -230,7 +233,6 @@ class RepositoryPolicyTests(unittest.TestCase):
                 "destination": "docs/api/compose-lens",
             },
         )
-        self.assertEqual(podman["revision"], "92a0fae5395dbdbcb949ec3ad74485bc7ae3f7f3")
         self.assertEqual(
             podman["documents"],
             [{"source": "docs/public", "destination": "docs/libraries/podman-lens"}],
@@ -373,8 +375,42 @@ class RepositoryPolicyTests(unittest.TestCase):
                 with self.subTest(workflow=workflow.name, line=line):
                     self.assertRegex(line, ACTION_PATTERN)
 
+    def test_renovate_polls_and_merges_documentation_source_revisions(self) -> None:
+        configuration = json.loads((ROOT / ".github" / "renovate.json").read_text(encoding="utf-8"))
+        manager = next(
+            manager
+            for manager in configuration["customManagers"]
+            if manager.get("datasourceTemplate") == "git-refs"
+        )
+        self.assertEqual(manager["managerFilePatterns"], ["/^documentation-sources\\.toml$/"])
+        self.assertEqual(manager["currentValueTemplate"], "main")
+        self.assertIn("(?<packageName>https://github", manager["matchStrings"][0])
+        self.assertIn("(?<currentDigest>[0-9a-f]{40})", manager["matchStrings"][0])
+        manifest = (ROOT / "documentation-sources.toml").read_text(encoding="utf-8")
+        pattern = manager["matchStrings"][0].replace("(?<", "(?P<")
+        matches = list(re.finditer(pattern, manifest))
+        self.assertEqual(
+            [match.group("depName") for match in matches],
+            ["boxferry", "compose-lens", "podman-lens", "quadlet-lens"],
+        )
+        for match in matches:
+            self.assertRegex(match.group("currentDigest"), r"\A[0-9a-f]{40}\Z")
+
+        rule = next(
+            rule
+            for rule in configuration["packageRules"]
+            if rule.get("matchDatasources") == ["git-refs"]
+        )
+        self.assertEqual(rule["matchFileNames"], ["documentation-sources.toml"])
+        self.assertEqual(rule["minimumReleaseAge"], "0 days")
+        self.assertEqual(rule["groupName"], "documentation sources")
+        self.assertTrue(rule["automerge"])
+        self.assertEqual(rule["automergeType"], "pr")
+        self.assertTrue(rule["platformAutomerge"])
+
     def test_deployment_workflow_preserves_static_release_contract(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
         for expected in (
             "show-authorized-keys",
@@ -398,8 +434,29 @@ class RepositoryPolicyTests(unittest.TestCase):
 
         self.assertIn("include-hidden-files: true", workflow)
         self.assertNotIn("pull_request:", workflow)
-
-        self.assertIn("inputs.operation == 'deploy' || inputs.operation == 'bootstrap'", workflow)
+        for expected in (
+            "workflow_dispatch:",
+            "inputs.revision || github.sha",
+            "git merge-base --is-ancestor",
+            "ref: ${{ needs.request.outputs.revision }}",
+            "BOXFERRY_WEBSITE_REVISION",
+            "needs.request.outputs.operation == 'deploy'",
+            "needs.request.outputs.operation == 'bootstrap'",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, workflow)
+        for expected in (
+            "github.event_name == 'push' && github.ref == 'refs/heads/main'",
+            "needs: [pr-gate]",
+            "actions: write",
+            "actions/workflows/deploy.yml/dispatches",
+            "inputs[operation]=deploy",
+            "inputs[revision]=${GITHUB_SHA}",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, ci)
+        self.assertNotIn("workflow_run:", workflow)
+        self.assertNotIn("${GITHUB_SHA}", workflow)
         self.assertNotIn("set -Eeuo pipefail", workflow)
 
     def test_literal_colors_are_centralized(self) -> None:

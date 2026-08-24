@@ -76,3 +76,25 @@ jobs:
               "${QUALITY_RESULT}" >&2
             exit 1
           fi
+
+  production:
+    name: Request exact production deployment
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [pr-gate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the validated main revision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/dispatches" \
+            -f ref=main \
+            -f "inputs[operation]=deploy" \
+            -f "inputs[revision]=${GITHUB_SHA}"
