@@ -1,6 +1,7 @@
 ---
 name: Production deployment
-run-name: Production ${{ inputs.operation }} at ${{ github.sha }}
+run-name: >-
+  Production ${{ inputs.operation }} at ${{ inputs.revision || github.sha }}
 
 on:
   workflow_dispatch:
@@ -16,7 +17,7 @@ on:
           - deploy
           - rollback
       revision:
-        description: Exact retained website revision required by rollback
+        description: Exact revision supplied by CI or required by rollback
         type: string
         required: false
         default: ""
@@ -32,12 +33,23 @@ jobs:
   request:
     name: Validate production request
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 3
+    outputs:
+      operation: ${{ steps.normalize.outputs.operation }}
+      revision: ${{ steps.normalize.outputs.revision }}
     steps:
-      - name: Require the default branch
+      - name: Check out the default branch history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: main
+      - name: Normalize and validate the production request
+        id: normalize
         env:
           REQUESTED_OPERATION: ${{ inputs.operation }}
           REQUESTED_REVISION: ${{ inputs.revision }}
+          SOURCE_REVISION: ${{ inputs.revision || github.sha }}
         run: |
           set -euo pipefail
           if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
@@ -45,19 +57,35 @@ jobs:
               "${REQUESTED_OPERATION}" "${GITHUB_REF}" >&2
             exit 1
           fi
+          if [[ ! "${REQUESTED_OPERATION}" =~ \
+            ^(show-authorized-keys|bootstrap|deploy|rollback)$ ]]; then
+            printf 'Unsupported production operation: %s\n' "${REQUESTED_OPERATION}" >&2
+            exit 1
+          fi
           if [[ "${REQUESTED_OPERATION}" == rollback ]]; then
             if [[ ! "${REQUESTED_REVISION}" =~ ^[0-9a-f]{40}$ ]]; then
               printf 'Rollback requires an exact 40-character lowercase revision.\n' >&2
               exit 1
             fi
-          elif [[ -n "${REQUESTED_REVISION}" ]]; then
-            printf 'Revision input is accepted only for rollback.\n' >&2
+          elif [[ -n "${REQUESTED_REVISION}" && "${REQUESTED_OPERATION}" != deploy ]]; then
+            printf 'Revision input is accepted only for deploy or rollback.\n' >&2
             exit 1
           fi
+          if [[ ! "${SOURCE_REVISION}" =~ ^[0-9a-f]{40}$ ]]; then
+            printf 'Website revision must be an exact lowercase commit SHA.\n' >&2
+            exit 1
+          fi
+          if ! git cat-file -e "${SOURCE_REVISION}^{commit}" ||
+            ! git merge-base --is-ancestor "${SOURCE_REVISION}" HEAD; then
+            printf 'Website revision must belong to main history.\n' >&2
+            exit 1
+          fi
+          printf 'operation=%s\n' "${REQUESTED_OPERATION}" >> "${GITHUB_OUTPUT}"
+          printf 'revision=%s\n' "${SOURCE_REVISION}" >> "${GITHUB_OUTPUT}"
 
   show-authorized-keys:
     name: Show restricted SSH key entries
-    if: inputs.operation == 'show-authorized-keys'
+    if: needs.request.outputs.operation == 'show-authorized-keys'
     needs: [request]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -79,7 +107,9 @@ jobs:
 
   build:
     name: Build immutable static release
-    if: inputs.operation == 'deploy' || inputs.operation == 'bootstrap'
+    if: >-
+      needs.request.outputs.operation == 'deploy' ||
+      needs.request.outputs.operation == 'bootstrap'
     needs: [request]
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -88,6 +118,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ needs.request.outputs.revision }}
       - name: Install pinned Node.js toolchain
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -114,7 +145,7 @@ jobs:
       - name: Upload immutable static release
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: boxferry-site-${{ github.sha }}
+          name: boxferry-site-${{ needs.request.outputs.revision }}
           path: site/
           if-no-files-found: error
           include-hidden-files: true
@@ -122,8 +153,10 @@ jobs:
 
   deploy:
     name: Publish Hetzner release
-    if: inputs.operation == 'deploy' || inputs.operation == 'bootstrap'
-    needs: [build]
+    if: >-
+      needs.request.outputs.operation == 'deploy' ||
+      needs.request.outputs.operation == 'bootstrap'
+    needs: [request, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
@@ -134,10 +167,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ needs.request.outputs.revision }}
       - name: Download immutable static release
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: boxferry-site-${{ github.sha }}
+          name: boxferry-site-${{ needs.request.outputs.revision }}
           path: site
       - name: Derive and print restricted authorized_keys entries
         env:
@@ -166,11 +200,12 @@ jobs:
             -f "${keys_directory}/known_hosts" > /dev/null
       - name: Upload and publish release
         env:
-          BOXFERRY_DEPLOY_OPERATION: ${{ inputs.operation }}
+          BOXFERRY_DEPLOY_OPERATION: ${{ needs.request.outputs.operation }}
           BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}
           BOXFERRY_DEPLOY_PORT: ${{ vars.BOXFERRY_DEPLOY_PORT }}
           BOXFERRY_DEPLOY_USER: ${{ vars.BOXFERRY_DEPLOY_USER }}
           BOXFERRY_SITE_ORIGIN: ${{ vars.BOXFERRY_SITE_ORIGIN }}
+          BOXFERRY_WEBSITE_REVISION: ${{ needs.request.outputs.revision }}
         run: |
           set -euo pipefail
           [[ "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev" || \
@@ -180,7 +215,7 @@ jobs:
 
           keys_directory="${RUNNER_TEMP}/boxferry-deployment-keys"
           remote="${BOXFERRY_DEPLOY_USER}@${BOXFERRY_DEPLOY_HOST}"
-          staging_name="${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          staging_name="${BOXFERRY_WEBSITE_REVISION}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           known_hosts="${keys_directory}/known_hosts"
           updater_key="${keys_directory}/version-updater"
           ssh_options=(
@@ -200,14 +235,14 @@ jobs:
             -e "${rsync_shell}" site/ "${remote}:${staging_name}/"
 
           if [[ "${BOXFERRY_DEPLOY_OPERATION}" == bootstrap ]]; then
-            printf 'bootstrap %s %s\n' "${GITHUB_SHA}" "${staging_name}" | \
+            printf 'bootstrap %s %s\n' "${BOXFERRY_WEBSITE_REVISION}" "${staging_name}" | \
               ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
             printf 'Created initial BoxFerry release %s without public verification.\n' \
-              "${GITHUB_SHA}"
+              "${BOXFERRY_WEBSITE_REVISION}"
             # Markdown backticks are literal, not command substitutions.
             # shellcheck disable=SC2016
             printf '## Initial production release\n\nCreated `%s`. Configure Hetzner to serve the `current` link, then run `deploy`.\n' \
-              "${GITHUB_SHA}" >> "${GITHUB_STEP_SUMMARY}"
+              "${BOXFERRY_WEBSITE_REVISION}" >> "${GITHUB_STEP_SUMMARY}"
             exit 0
           fi
 
@@ -216,7 +251,7 @@ jobs:
             local status=$?
             trap - ERR
             if [[ "${activated}" == true ]]; then
-              printf 'rollback %s\n' "${GITHUB_SHA}" | \
+              printf 'rollback %s\n' "${BOXFERRY_WEBSITE_REVISION}" | \
                 ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}" || \
                 printf 'Automatic rollback failed; manual recovery is required.\n' >&2
             fi
@@ -224,23 +259,23 @@ jobs:
           }
           trap rollback_on_error ERR
 
-          printf 'activate %s %s\n' "${GITHUB_SHA}" "${staging_name}" | \
+          printf 'activate %s %s\n' "${BOXFERRY_WEBSITE_REVISION}" "${staging_name}" | \
             ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
           activated=true
 
           origin="${BOXFERRY_SITE_ORIGIN%/}"
           metadata="$(curl --fail --silent --show-error --location \
             --retry 5 --retry-all-errors --connect-timeout 10 --max-time 30 \
-            "${origin}/assets/data/deployment.json?revision=${GITHUB_SHA}")"
+            "${origin}/assets/data/deployment.json?revision=${BOXFERRY_WEBSITE_REVISION}")"
           # revision is a jq variable, not a shell variable.
           # shellcheck disable=SC2016
-          jq -e --arg revision "${GITHUB_SHA}" \
+          jq -e --arg revision "${BOXFERRY_WEBSITE_REVISION}" \
             '.schema_version == 1 and .website_revision == $revision' \
             <<< "${metadata}" > /dev/null
           curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
-            --output /dev/null "${origin}/?revision=${GITHUB_SHA}"
+            --output /dev/null "${origin}/?revision=${BOXFERRY_WEBSITE_REVISION}"
           curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
-            --output /dev/null "${origin}/docs/?revision=${GITHUB_SHA}"
+            --output /dev/null "${origin}/docs/?revision=${BOXFERRY_WEBSITE_REVISION}"
 
           headers="$(curl --fail --silent --show-error --head "${origin}/")"
           grep -Fqi 'content-security-policy:' <<< "${headers}"
@@ -252,18 +287,19 @@ jobs:
             "${origin}/assets/data/")" == 403 ]]
 
           activated=false
-          printf 'finalize %s\n' "${GITHUB_SHA}" | \
+          printf 'finalize %s\n' "${BOXFERRY_WEBSITE_REVISION}" | \
             ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
           trap - ERR
-          printf 'Published verified BoxFerry release %s.\n' "${GITHUB_SHA}"
+          printf 'Published verified BoxFerry release %s.\n' "${BOXFERRY_WEBSITE_REVISION}"
           # Markdown backticks are literal, not command substitutions.
           # shellcheck disable=SC2016
           printf '## Production deployment\n\nPublished and verified `%s` at %s.\n' \
-            "${GITHUB_SHA}" "${BOXFERRY_SITE_ORIGIN}" >> "${GITHUB_STEP_SUMMARY}"
+            "${BOXFERRY_WEBSITE_REVISION}" "${BOXFERRY_SITE_ORIGIN}" \
+            >> "${GITHUB_STEP_SUMMARY}"
 
   rollback:
     name: Promote retained Hetzner release
-    if: inputs.operation == 'rollback'
+    if: needs.request.outputs.operation == 'rollback'
     needs: [request]
     runs-on: ubuntu-24.04
     timeout-minutes: 10

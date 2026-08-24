@@ -49,6 +49,10 @@ Local preview mode selects an explicitly declared sibling-checkout location so d
 authors can preview uncommitted work on the host or in the shared Dev Container. Locked mode
 obtains exact source revisions and is the only mode permitted for production builds.
 
+Renovate polls the `main` Git ref of every declared documentation source. It groups changed commit
+digests into one revision-pin pull request and enables merge only after the locked website checks
+pass. The versioned manifest therefore remains the production source of truth.
+
 ## Deployment boundary
 
 GitHub Actions builds the locked site before entering the protected `production` environment. One
@@ -58,6 +62,10 @@ into immutable release storage, rotates four previous links, and changes the ser
 last. The updater permits one server-enforced bootstrap only while no releases exist, allowing the
 first `current` link to be created before Hetzner can serve that path. Every later activation runs
 HTTPS and Apache policy checks before finalization; failures restore the saved link state.
+
+A successful push-triggered `CI` run on `main` starts publication for that run's exact commit.
+Failed, pull-request, and manually dispatched CI runs do not publish. Operators can still request
+manual deployment, bootstrap, key rendering, or rollback from `main`.
 
 The deployment contract and administrator procedure are defined in [`deployment.md`](deployment.md)
 and [decision 0003](decisions/0003-hetzner-atomic-static-deployment.md).
