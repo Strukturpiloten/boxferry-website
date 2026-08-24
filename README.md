@@ -21,9 +21,18 @@ For an interactive preview:
 ./scripts/serve.sh
 ```
 
-The supported toolchain, repository architecture, and production runbook are documented in
-[`docs/development.md`](docs/development.md), [`docs/architecture.md`](docs/architecture.md), and
-[`docs/deployment.md`](docs/deployment.md).
+## Deploy to production
+
+Production publishing is manual and uses the protected GitHub `production` environment. New
+servers require one administrator preparation and one `bootstrap` publication; routine releases
+use `deploy` and keep five rollback targets.
+
+Follow the concise [`docs/deployment.md`](docs/deployment.md) runbook. It covers GitHub variables
+and secrets, SSH key creation, the local server-preparation script, first publication, normal
+deployment, verification, key rotation, and rollback.
+
+The supported toolchain and repository architecture are documented in
+[`docs/development.md`](docs/development.md) and [`docs/architecture.md`](docs/architecture.md).
 
 ## Status
 
