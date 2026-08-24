@@ -8,7 +8,7 @@ JSON, Rustdoc, and plain-text files directly. The webserver does not run PHP or 
 The Hetzner domain document root is:
 
 ```text
-/usr/www/users/c3diiy/dev_boxferry/current
+/usr/home/c3diiy/public_html/dev_boxferry/current
 ```
 
 The deployment root has this contract:
@@ -49,20 +49,22 @@ An incompatible Apache policy therefore causes automatic rollback.
 
 ## One-time Hetzner bootstrap
 
-Create the private deployment directories with the normal administrator SSH access:
+Run the following commands from a local `boxferry-website` checkout with the normal, unrestricted
+administrator SSH identity. The two restricted deployment identities cannot install or replace the
+updater.
 
 ```console
 ssh c3diiy@www734.your-server.de -p 222 \
-  'install -d -m 700 /usr/www/users/c3diiy/dev_boxferry/.deploy && install -d -m 755 /usr/www/users/c3diiy/dev_boxferry/incoming /usr/www/users/c3diiy/dev_boxferry/releases'
+  'install -d -m 700 /usr/home/c3diiy/public_html/dev_boxferry/.deploy && install -d -m 755 /usr/home/c3diiy/public_html/dev_boxferry/incoming /usr/home/c3diiy/public_html/dev_boxferry/releases'
 ```
 
 Copy the fixed-command updater from this repository, then make it owner-executable:
 
 ```console
 scp -P 222 deployment/hetzner/version-updater.sh \
-  c3diiy@www734.your-server.de:/usr/www/users/c3diiy/dev_boxferry/.deploy/version-updater.sh
+  c3diiy@www734.your-server.de:/usr/home/c3diiy/public_html/dev_boxferry/.deploy/version-updater.sh
 ssh c3diiy@www734.your-server.de -p 222 \
-  'chmod 700 /usr/www/users/c3diiy/dev_boxferry/.deploy/version-updater.sh'
+  'chmod 700 /usr/home/c3diiy/public_html/dev_boxferry/.deploy/version-updater.sh'
 ```
 
 The updater derives its deployment root from its `.deploy/` location. It accepts exactly one
@@ -84,7 +86,7 @@ Create these environment variables:
 | `BOXFERRY_DEPLOY_HOST`        | `www734.your-server.de`                                  |
 | `BOXFERRY_DEPLOY_PORT`        | `222`                                                    |
 | `BOXFERRY_DEPLOY_USER`        | `c3diiy`                                                 |
-| `BOXFERRY_DEPLOY_ROOT`        | `/usr/www/users/c3diiy/dev_boxferry`                     |
+| `BOXFERRY_DEPLOY_ROOT`        | `/usr/home/c3diiy/public_html/dev_boxferry`              |
 | `BOXFERRY_SITE_ORIGIN`        | `https://boxferry.dev`                                   |
 | `BOXFERRY_DEPLOY_KNOWN_HOSTS` | Verified complete known-hosts line for host and port 222 |
 
@@ -130,6 +132,25 @@ For rotation:
 4. Run a production deployment or an SSH protocol test.
 5. Remove the old lines only after the new keys succeed.
 
+## First publication
+
+Hetzner cannot select `current` as the document root before that link exists. For an empty release
+store, run `Production deployment` on `main` with `bootstrap`. This builds and validates the same
+immutable artifact as a normal deployment, uploads it through the restricted rsync identity, and
+creates and finalizes the first `current` link without requesting the not-yet-routable public
+origin.
+
+The server updater permits `bootstrap` only while release history and storage are empty. Retrying
+the same first revision is safe, but the operation cannot bypass public verification for a later
+release.
+
+After bootstrap succeeds:
+
+1. Set the Hetzner document root to
+   `/usr/home/c3diiy/public_html/dev_boxferry/current`.
+2. Point DNS at the webspace and enable a valid certificate for `boxferry.dev`.
+3. Run the normal `deploy` operation. It verifies the public HTTPS and Apache contract.
+
 ## Deploy
 
 Run the `Production deployment` workflow on `main` with `deploy`. It:
@@ -154,7 +175,7 @@ Inspect retained revisions through the administrator connection:
 
 ```console
 ssh c3diiy@www734.your-server.de -p 222 \
-  'cd /usr/www/users/c3diiy/dev_boxferry && ls -l current previous-1 previous-2 previous-3 previous-4'
+  'cd /usr/home/c3diiy/public_html/dev_boxferry && ls -l current previous-1 previous-2 previous-3 previous-4'
 ```
 
 Run `Production deployment` with `rollback` and enter the exact retained 40-character SHA. The
@@ -164,7 +185,7 @@ verification restores the complete original link state.
 
 ## DNS and TLS
 
-Point `boxferry.dev` at the Hetzner webspace, configure the document root to the `current` path, and
-enable a valid certificate before the first production deployment. The generated Apache policy sets
-one-year HSTS for the domain without `includeSubDomains` or preload. The workflow refuses non-HTTPS
-origins and does not finalize a release that fails HTTPS verification.
+After the one-time bootstrap creates `current`, point `boxferry.dev` at the Hetzner webspace,
+configure the document root to the `current` path, and enable a valid certificate. The generated
+Apache policy sets one-year HSTS for the domain without `includeSubDomains` or preload. Normal
+deployments refuse non-HTTPS origins and do not finalize a release that fails HTTPS verification.

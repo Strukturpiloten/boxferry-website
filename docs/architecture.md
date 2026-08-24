@@ -55,7 +55,9 @@ GitHub Actions builds the locked site before entering the protected `production`
 forced SSH key writes only to Hetzner's unserved `incoming/` subtree through `rrsync`. A second forced
 key serializes the fixed version updater with `flock`. The updater moves a validated staging tree
 into immutable release storage, rotates four previous links, and changes the served `current` link
-last. HTTPS and Apache policy checks run before finalization; failures restore the saved link state.
+last. The updater permits one server-enforced bootstrap only while no releases exist, allowing the
+first `current` link to be created before Hetzner can serve that path. Every later activation runs
+HTTPS and Apache policy checks before finalization; failures restore the saved link state.
 
 The deployment contract and administrator procedure are defined in [`deployment.md`](deployment.md)
 and [decision 0003](decisions/0003-hetzner-atomic-static-deployment.md).

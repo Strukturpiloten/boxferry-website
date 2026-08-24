@@ -19,10 +19,17 @@ forced through `flock` to a repository-owned version updater. The updater valida
 revision, moves the staging directory into immutable `releases/<sha>/` storage, rotates four
 previous links from oldest to newest, and replaces `current` last.
 
-Serve `/usr/www/users/c3diiy/dev_boxferry/current` through Apache. Retain `current` plus
-`previous-1` through `previous-4`. Verify the public HTTPS revision and server policy after activation
-but before finalization; restore the complete saved link state on failure. Permit a retained release
-to be promoted through the same verified transaction.
+Serve `/usr/home/c3diiy/public_html/dev_boxferry/current` through Apache. Retain `current` plus
+`previous-1` through `previous-4`. Verify the public HTTPS revision and server policy after
+activation but before finalization; restore the complete saved link state on failure. Permit a
+retained release to be promoted through the same verified transaction.
+
+Permit one explicit bootstrap operation while the release store and history are empty. It builds
+and validates the normal immutable artifact, creates and finalizes the first `current` link, and
+skips public-origin verification because Hetzner cannot select that path before it exists. Enforce
+this exception in the server updater so it can be retried for the same initial revision but cannot
+be reused after any release history exists. Configure the document root, DNS, and TLS after this
+bootstrap, then require the normal verified deployment path.
 
 Copy a tracked `.htaccess` policy into every generated release. It owns directory-index behavior,
 static content types, security headers, cache revalidation, release-manifest denial, and the
@@ -43,5 +50,5 @@ restrict deployment operations to `main` and the `production` environment.
   not provide the hard filesystem isolation of a separate hosting account or chroot.
 - The updater requires one-time manual installation and manual replacement when its tracked source
   changes.
-- Apache override compatibility, DNS, and TLS must be established before the first deployment can
-  pass external verification.
+- The first publication is a narrowly server-enforced bootstrap; all later publications require
+  public HTTPS and Apache verification.

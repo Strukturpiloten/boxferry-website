@@ -6,12 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Print restricted keys or deploy the current main revision
+        description: Print keys, bootstrap, deploy, or roll back production
         type: choice
         required: true
         default: show-authorized-keys
         options:
           - show-authorized-keys
+          - bootstrap
           - deploy
           - rollback
       revision:
@@ -78,7 +79,7 @@ jobs:
 
   build:
     name: Build immutable static release
-    if: inputs.operation == 'deploy'
+    if: inputs.operation == 'deploy' || inputs.operation == 'bootstrap'
     needs: [request]
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -120,8 +121,8 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Activate Hetzner release
-    if: inputs.operation == 'deploy'
+    name: Publish Hetzner release
+    if: inputs.operation == 'deploy' || inputs.operation == 'bootstrap'
     needs: [build]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -163,16 +164,19 @@ jobs:
           chmod 600 "${keys_directory}/known_hosts"
           ssh-keygen -F "[${BOXFERRY_DEPLOY_HOST}]:${BOXFERRY_DEPLOY_PORT}" \
             -f "${keys_directory}/known_hosts" > /dev/null
-      - name: Upload, activate, verify, and finalize
+      - name: Upload and publish release
         env:
+          BOXFERRY_DEPLOY_OPERATION: ${{ inputs.operation }}
           BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}
           BOXFERRY_DEPLOY_PORT: ${{ vars.BOXFERRY_DEPLOY_PORT }}
           BOXFERRY_DEPLOY_USER: ${{ vars.BOXFERRY_DEPLOY_USER }}
           BOXFERRY_SITE_ORIGIN: ${{ vars.BOXFERRY_SITE_ORIGIN }}
         run: |
-          set -Eeuo pipefail
+          set -euo pipefail
           [[ "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev" || \
             "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev/" ]]
+          [[ "${BOXFERRY_DEPLOY_OPERATION}" == deploy ||
+            "${BOXFERRY_DEPLOY_OPERATION}" == bootstrap ]]
 
           keys_directory="${RUNNER_TEMP}/boxferry-deployment-keys"
           remote="${BOXFERRY_DEPLOY_USER}@${BOXFERRY_DEPLOY_HOST}"
@@ -194,6 +198,18 @@ jobs:
 
           rsync -rlptz --delete --safe-links --chmod=D755,F644 \
             -e "${rsync_shell}" site/ "${remote}:${staging_name}/"
+
+          if [[ "${BOXFERRY_DEPLOY_OPERATION}" == bootstrap ]]; then
+            printf 'bootstrap %s %s\n' "${GITHUB_SHA}" "${staging_name}" | \
+              ssh "${ssh_options[@]}" -i "${updater_key}" "${remote}"
+            printf 'Created initial BoxFerry release %s without public verification.\n' \
+              "${GITHUB_SHA}"
+            # Markdown backticks are literal, not command substitutions.
+            # shellcheck disable=SC2016
+            printf '## Initial production release\n\nCreated `%s`. Configure Hetzner to serve the `current` link, then run `deploy`.\n' \
+              "${GITHUB_SHA}" >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
 
           activated=false
           rollback_on_error() {
@@ -292,7 +308,7 @@ jobs:
           BOXFERRY_SITE_ORIGIN: ${{ vars.BOXFERRY_SITE_ORIGIN }}
           BOXFERRY_ROLLBACK_REVISION: ${{ inputs.revision }}
         run: |
-          set -Eeuo pipefail
+          set -euo pipefail
           [[ "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev" || \
             "${BOXFERRY_SITE_ORIGIN}" == "https://boxferry.dev/" ]]
 
