@@ -83,6 +83,47 @@ class VersionUpdaterTests(unittest.TestCase):
         self.assertTrue((self.releases / revision).is_dir())
         self.assertFalse((self.deploy_directory / "pending-release").exists())
 
+    def test_bootstrap_publishes_only_the_first_release(self) -> None:
+        revision = "2" * 40
+        staging_name = self.stage(revision)
+
+        result = self.request(f"bootstrap {revision} {staging_name}")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Bootstrapped initial", result.stdout)
+        self.assertEqual(self.target("current"), f"releases/{revision}")
+        self.assertIsNone(self.target("previous-1"))
+        self.assertTrue((self.releases / revision).is_dir())
+        self.assertFalse((self.deploy_directory / "pending-release").exists())
+
+    def test_bootstrap_is_idempotent_for_the_same_initial_revision(self) -> None:
+        revision = "3" * 40
+        first_staging = self.stage(revision, run_id=1)
+        first = self.request(f"bootstrap {revision} {first_staging}")
+        second_staging = self.stage(revision, run_id=2)
+
+        second = self.request(f"bootstrap {revision} {second_staging}")
+
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertFalse((self.incoming / second_staging).exists())
+        self.assertEqual(self.target("current"), f"releases/{revision}")
+        self.assertEqual([path.name for path in self.releases.iterdir()], [revision])
+
+    def test_bootstrap_rejects_a_later_release(self) -> None:
+        first = "4" * 40
+        second = "5" * 40
+        self.deploy(first, 1)
+        staging_name = self.stage(second, run_id=2)
+
+        result = self.request(f"bootstrap {second} {staging_name}")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("first release", result.stderr)
+        self.assertEqual(self.target("current"), f"releases/{first}")
+        self.assertTrue((self.incoming / staging_name).is_dir())
+        self.assertFalse((self.releases / second).exists())
+
     def test_six_releases_retain_five_ordered_links_and_directories(self) -> None:
         revisions = [str(index) * 40 for index in range(1, 7)]
         for index, revision in enumerate(revisions, start=1):
@@ -126,6 +167,16 @@ class VersionUpdaterTests(unittest.TestCase):
         self.assertEqual(activated.returncode, 0, activated.stderr)
         self.assertEqual(finalized.returncode, 0, finalized.stderr)
         self.assertFalse((self.incoming / staging_name).exists())
+        self.assertEqual(self.target("current"), f"releases/{revision}")
+
+    def test_rollback_without_a_pending_change_is_idempotent(self) -> None:
+        revision = "6" * 40
+        self.deploy(revision, 1)
+
+        rolled_back = self.request(f"rollback {revision}")
+
+        self.assertEqual(rolled_back.returncode, 0, rolled_back.stderr)
+        self.assertIn("no pending change", rolled_back.stdout)
         self.assertEqual(self.target("current"), f"releases/{revision}")
 
     def test_finalized_retained_release_can_be_promoted(self) -> None:

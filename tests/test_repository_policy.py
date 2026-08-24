@@ -378,6 +378,7 @@ class RepositoryPolicyTests(unittest.TestCase):
 
         for expected in (
             "show-authorized-keys",
+            "bootstrap",
             "deploy",
             "rollback",
             "name: production",
@@ -389,6 +390,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             "BOXFERRY_SITE_ORIGIN",
             "rsync -rlptz --delete --safe-links",
             "activate %s %s",
+            "bootstrap %s %s",
             "finalize %s",
         ):
             with self.subTest(expected=expected):
@@ -396,6 +398,9 @@ class RepositoryPolicyTests(unittest.TestCase):
 
         self.assertIn("include-hidden-files: true", workflow)
         self.assertNotIn("pull_request:", workflow)
+
+        self.assertIn("inputs.operation == 'deploy' || inputs.operation == 'bootstrap'", workflow)
+        self.assertNotIn("set -Eeuo pipefail", workflow)
 
     def test_literal_colors_are_centralized(self) -> None:
         token_file = ROOT / "content" / "assets" / "stylesheets" / "tokens.css"

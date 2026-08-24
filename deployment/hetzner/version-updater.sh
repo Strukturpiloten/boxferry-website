@@ -225,6 +225,45 @@ activate_release() {
   printf 'Activated BoxFerry release %s; verification is required.\n' "${revision}"
 }
 
+bootstrap_release() {
+  local revision=$1
+  local staging_name=$2
+  local current_target link target
+  local -a targets=()
+  validate_revision "${revision}"
+  for link in "${managed_links[@]}"; do
+    targets+=("$(read_link_target "${link}")")
+  done
+  current_target="${targets[0]}"
+  for target in "${targets[@]:1}"; do
+    [[ "${target}" == none ]] || fail "bootstrap requires empty release history"
+  done
+
+  if [[ "${current_target}" == none ]]; then
+    [[ ! -e "${pending_file}" && ! -L "${pending_file}" ]] ||
+      fail "bootstrap requires no pending release"
+    [[ -z "$(find "${releases_directory}" -mindepth 1 -maxdepth 1 -print -quit)" ]] ||
+      fail "bootstrap requires empty release storage"
+  elif [[ "${current_target}" == "releases/${revision}" ]]; then
+    [[ -z "$(find "${releases_directory}" -mindepth 1 -maxdepth 1 \
+      ! -name "${revision}" -print -quit)" ]] ||
+      fail "bootstrap requires exactly one release"
+    if [[ -e "${pending_file}" || -L "${pending_file}" ]]; then
+      load_pending "${revision}"
+      for link in "${managed_links[@]}"; do
+        [[ "${pending_links[${link}]}" == none ]] ||
+          fail "bootstrap pending state contains release history"
+      done
+    fi
+  else
+    fail "bootstrap is permitted only for the first release"
+  fi
+
+  activate_release "${revision}" "${staging_name}"
+  finalize_release "${revision}"
+  printf 'Bootstrapped initial BoxFerry release %s.\n' "${revision}"
+}
+
 finalize_release() {
   local revision=$1
   local current_target oldest_link=previous-4
@@ -303,7 +342,15 @@ promote_retained_release() {
 
 rollback_release() {
   local revision=$1
+  local current_target
   validate_revision "${revision}"
+  if [[ ! -e "${pending_file}" && ! -L "${pending_file}" ]]; then
+    current_target="$(read_link_target current)"
+    [[ "${current_target}" == "releases/${revision}" ]] ||
+      fail "no pending release exists"
+    printf 'BoxFerry release %s has no pending change to roll back.\n' "${revision}"
+    return
+  fi
   restore_pending_release "${revision}"
 }
 
@@ -319,6 +366,11 @@ main() {
   read -r operation first second extra <<< "${request}"
   [[ -z "${extra:-}" ]] || fail "deployment request has too many fields"
   case "${operation:-}" in
+    bootstrap)
+      [[ -n "${first:-}" && -n "${second:-}" ]] ||
+        fail "bootstrap requires revision and staging name"
+      bootstrap_release "${first}" "${second}"
+      ;;
     activate)
       [[ -n "${first:-}" && -n "${second:-}" ]] || fail "activate requires revision and staging name"
       activate_release "${first}" "${second}"
