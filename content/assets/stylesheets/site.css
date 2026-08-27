@@ -156,9 +156,21 @@
   border-radius: var(--bf-radius-small);
 }
 
+.bf-header-link--text {
+  padding: var(--bf-space-2);
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .bf-header-link svg {
   width: var(--bf-icon-medium);
   height: var(--bf-icon-medium);
+}
+
+.bf-legal-address {
+  font-style: normal;
+  line-height: 1.6;
 }
 
 .bf-footer {

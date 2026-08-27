@@ -49,9 +49,10 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(project["theme"]["palette"][0]["scheme"], "slate")
         self.assertEqual(project["theme"]["palette"][1]["scheme"], "default")
         self.assertIn("navigation.indexes", project["theme"]["features"])
-        self.assertIn("navigation.tabs", project["theme"]["features"])
-        self.assertIn("navigation.tabs.sticky", project["theme"]["features"])
+        self.assertNotIn("navigation.tabs", project["theme"]["features"])
+        self.assertNotIn("navigation.tabs.sticky", project["theme"]["features"])
         self.assertEqual(project["markdown_extensions"]["pymdownx"]["details"], {})
+        self.assertEqual(project["markdown_extensions"]["pymdownx"]["superfences"], {})
         self.assertEqual([next(iter(item)) for item in project["nav"]], ["Docs", "Support"])
 
         custom_dir = project["theme"].get("custom_dir")
@@ -320,6 +321,17 @@ class RepositoryPolicyTests(unittest.TestCase):
             },
         )
 
+    def test_header_and_footer_links_use_the_intended_locations(self) -> None:
+        header = (ROOT / "overrides" / "partials" / "source.html").read_text(encoding="utf-8")
+        footer = (ROOT / "overrides" / "partials" / "copyright.html").read_text(encoding="utf-8")
+
+        self.assertIn("{{ 'docs/' | url }}", header)
+        self.assertIn("{{ 'support/' | url }}", header)
+        self.assertRegex(
+            footer,
+            r'(?s)config\.extra\.contact_url.*target="_blank".*rel="noopener noreferrer"',
+        )
+
     def test_english_legal_pages_cover_provider_and_privacy_baselines(self) -> None:
         legal_notice = (ROOT / "content" / "legal-notice" / "index.md").read_text(encoding="utf-8")
         privacy_policy = (ROOT / "content" / "privacy-policy" / "index.md").read_text(
@@ -329,6 +341,10 @@ class RepositoryPolicyTests(unittest.TestCase):
         for expected in ("Legal Notice", "Section 5", "HRA 200758", "DE456878137"):
             with self.subTest(document="legal notice", expected=expected):
                 self.assertIn(expected, legal_notice)
+        self.assertIn('<address class="bf-legal-address">', legal_notice)
+        self.assertFalse(any(line.endswith("\\") for line in legal_notice.splitlines()))
+        self.assertIn('<address class="bf-legal-address">', privacy_policy)
+        self.assertFalse(any(line.endswith("\\") for line in privacy_policy.splitlines()))
         for expected in (
             "Privacy Policy",
             "Hetzner Online GmbH",
