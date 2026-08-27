@@ -17,6 +17,9 @@ COLOR_PATTERN = re.compile(r"#[0-9a-fA-F]{3,8}\b|(?:rgb|hsl)a?\(")
 EXACT_PYTHON_PIN_PATTERN = re.compile(
     r"(?P<name>[a-z0-9][a-z0-9._-]*)==(?P<version>[0-9][0-9A-Za-z.+-]*)\Z"
 )
+EXACT_NODE_PIN_PATTERN = re.compile(
+    r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\Z"
+)
 
 
 def exact_python_pins(dependencies: list[str]) -> dict[str, str]:
@@ -34,6 +37,14 @@ def exact_python_pins(dependencies: list[str]) -> dict[str, str]:
     return pins
 
 
+def exact_node_pins(dependencies: dict[str, str]) -> dict[str, str]:
+    """Return exact Node pins, rejecting ranges, tags, and other selectors."""
+    for name, version in dependencies.items():
+        if EXACT_NODE_PIN_PATTERN.fullmatch(version) is None:
+            raise ValueError(f"Node development dependency is not exactly pinned: {name}@{version}")
+    return dependencies
+
+
 class RepositoryPolicyTests(unittest.TestCase):
     """Keep local and hosted quality contracts aligned."""
 
@@ -49,9 +60,10 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(project["theme"]["palette"][0]["scheme"], "slate")
         self.assertEqual(project["theme"]["palette"][1]["scheme"], "default")
         self.assertIn("navigation.indexes", project["theme"]["features"])
-        self.assertIn("navigation.tabs", project["theme"]["features"])
-        self.assertIn("navigation.tabs.sticky", project["theme"]["features"])
+        self.assertNotIn("navigation.tabs", project["theme"]["features"])
+        self.assertNotIn("navigation.tabs.sticky", project["theme"]["features"])
         self.assertEqual(project["markdown_extensions"]["pymdownx"]["details"], {})
+        self.assertEqual(project["markdown_extensions"]["pymdownx"]["superfences"], {})
         self.assertEqual([next(iter(item)) for item in project["nav"]], ["Docs", "Support"])
 
         custom_dir = project["theme"].get("custom_dir")
@@ -320,6 +332,17 @@ class RepositoryPolicyTests(unittest.TestCase):
             },
         )
 
+    def test_header_and_footer_links_use_the_intended_locations(self) -> None:
+        header = (ROOT / "overrides" / "partials" / "source.html").read_text(encoding="utf-8")
+        footer = (ROOT / "overrides" / "partials" / "copyright.html").read_text(encoding="utf-8")
+
+        self.assertIn("{{ 'docs/' | url }}", header)
+        self.assertIn("{{ 'support/' | url }}", header)
+        self.assertRegex(
+            footer,
+            r'(?s)config\.extra\.contact_url.*target="_blank".*rel="noopener noreferrer"',
+        )
+
     def test_english_legal_pages_cover_provider_and_privacy_baselines(self) -> None:
         legal_notice = (ROOT / "content" / "legal-notice" / "index.md").read_text(encoding="utf-8")
         privacy_policy = (ROOT / "content" / "privacy-policy" / "index.md").read_text(
@@ -329,6 +352,10 @@ class RepositoryPolicyTests(unittest.TestCase):
         for expected in ("Legal Notice", "Section 5", "HRA 200758", "DE456878137"):
             with self.subTest(document="legal notice", expected=expected):
                 self.assertIn(expected, legal_notice)
+        self.assertIn('<address class="bf-legal-address">', legal_notice)
+        self.assertFalse(any(line.endswith("\\") for line in legal_notice.splitlines()))
+        self.assertIn('<address class="bf-legal-address">', privacy_policy)
+        self.assertFalse(any(line.endswith("\\") for line in privacy_policy.splitlines()))
         for expected in (
             "Privacy Policy",
             "Hetzner Online GmbH",
@@ -396,10 +423,29 @@ class RepositoryPolicyTests(unittest.TestCase):
             with self.subTest(dependencies=dependencies), self.assertRaises(ValueError):
                 exact_python_pins(dependencies)
 
-    def test_spelling_gate_is_pinned_and_covers_repository_sources(self) -> None:
+    def test_direct_node_tools_are_exactly_pinned_and_locked(self) -> None:
         package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
-        self.assertEqual(package["devDependencies"]["cspell"], "10.0.1")
+        lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
 
+        configured_pins = exact_node_pins(package["devDependencies"])
+        self.assertEqual(set(configured_pins), {"cspell", "markdownlint-cli2", "prettier"})
+
+        locked_pins = exact_node_pins(lock["packages"][""]["devDependencies"])
+        self.assertEqual(locked_pins, configured_pins)
+
+        resolved_versions = {
+            name: lock["packages"][f"node_modules/{name}"]["version"] for name in configured_pins
+        }
+        self.assertEqual(resolved_versions, configured_pins)
+
+    def test_node_pin_parser_rejects_non_exact_dependencies(self) -> None:
+        invalid_versions = ("^10.0.1", "~10.0.1", ">=10.0.1", "latest", "10.0")
+
+        for version in invalid_versions:
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                exact_node_pins({"cspell": version})
+
+    def test_spelling_gate_covers_repository_sources(self) -> None:
         configuration = json.loads((ROOT / "cspell.json").read_text(encoding="utf-8"))
         self.assertTrue(configuration["useGitignore"])
         self.assertEqual(configuration["language"], "en,en-US")

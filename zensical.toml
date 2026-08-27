@@ -100,8 +100,6 @@ features = [
   "navigation.instant",
   "navigation.instant.progress",
   "navigation.sections",
-  "navigation.tabs",
-  "navigation.tabs.sticky",
   "navigation.top",
   "search.highlight",
   "search.suggest",
@@ -126,6 +124,7 @@ toggle.name = "Switch to dark mode"
 
 [project.markdown_extensions]
 pymdownx.details = {}
+pymdownx.superfences = {}
 
 [project.validation]
 invalid_links = true

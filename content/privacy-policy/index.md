@@ -12,15 +12,17 @@ for this static website and does not describe unrelated processing on external w
 
 The controller under the General Data Protection Regulation (GDPR) is:
 
-Strukturpiloten OHG\
-Eveser Str. 72\
-31675 Bückeburg\
-Germany
+<address class="bf-legal-address">
+  <strong>Strukturpiloten OHG</strong><br />
+  Eveser Str. 72<br />
+  31675 Bückeburg<br />
+  Germany
+</address>
 
-Represented by the partners Frauke Beckert and Martin Beckert.
+Represented by its partners: Frauke Beckert and Martin Beckert.
 
-Email: [hallo@strukturpiloten.de](mailto:hallo@strukturpiloten.de)\
-Telephone: [+49 173 4816832](tel:+491734816832)
+- **Email:** [hallo@strukturpiloten.de](mailto:hallo@strukturpiloten.de)
+- **Telephone:** [+49 173 4816832](tel:+491734816832)
 
 ## Hosting and server logs
 

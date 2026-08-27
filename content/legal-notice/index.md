@@ -8,23 +8,25 @@ Provider information under Section 5 of the German Digital Services Act
 
 ## Provider
 
-Strukturpiloten OHG\
-Eveser Str. 72\
-31675 Bückeburg\
-Germany
+<address class="bf-legal-address">
+  <strong>Strukturpiloten OHG</strong><br />
+  Eveser Str. 72<br />
+  31675 Bückeburg<br />
+  Germany
+</address>
 
-Represented by the partners Frauke Beckert and Martin Beckert.
+Represented by its partners: Frauke Beckert and Martin Beckert.
 
 ## Register and tax information
 
-Commercial register: HRA 200758\
-Register court: Amtsgericht Stadthagen\
-VAT identification number under Section 27a of the German VAT Act: DE456878137
+- **Commercial register:** HRA 200758
+- **Register court:** Amtsgericht Stadthagen
+- **VAT identification number under Section 27a of the German VAT Act:** DE456878137
 
 ## Contact
 
-Email: [hallo@strukturpiloten.de](mailto:hallo@strukturpiloten.de)\
-Telephone: [+49 173 4816832](tel:+491734816832)
+- **Email:** [hallo@strukturpiloten.de](mailto:hallo@strukturpiloten.de)
+- **Telephone:** [+49 173 4816832](tel:+491734816832)
 
 ## Editorial responsibility
 

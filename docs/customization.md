@@ -10,6 +10,17 @@ Presentation settings are intentionally split by responsibility.
 | BoxFerry mark and wordmark source vectors           | `content/assets/images/brand/`                           |
 | GitHub and Strukturpiloten header icons             | `overrides/partials/source.html` and `overrides/.icons/` |
 
+## Change the top navigation
+
+Edit the `nav` array in `zensical.toml` to change the page hierarchy and labels. The `Docs`
+and `Support` links displayed at the right of the header are rendered by
+`overrides/partials/source.html`; their spacing and appearance use `.bf-header-links` and
+`.bf-header-link--text` in `site.css`.
+
+Keep `navigation.tabs` and `navigation.tabs.sticky` out of the theme `features` array. Those
+features render top-level navigation in a separate row below the header instead of beside the
+BoxFerry identity.
+
 ## Change the content width
 
 Edit the `.md-grid` rule near the top of `site.css`. Its `max-width` controls the shared page grid;
