@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APACHE_POLICY = ROOT / "deployment" / "apache" / ".htaccess"
 DEPLOYMENT_METADATA = Path("assets/data/deployment.json")
 RELEASE_MANIFEST = Path(".boxferry-release")
+COMPOSE_GUIDE_ROUTE = Path("docs/guides/convert/compose-to-compose/index.html")
 
 REQUIRED_ROUTES = (
     "index.html",
@@ -185,6 +186,23 @@ def _verify_rule_routes_and_search(site: Path) -> None:
             raise SiteVerificationError(f"diagnostic rule is missing from generated search: {code}")
 
 
+def _verify_rendered_documentation(site: Path) -> None:
+    guide = (site / COMPOSE_GUIDE_ROUTE).read_text(encoding="utf-8")
+    if "```" in guide or '<h2 id="yaml">' in guide:
+        raise SiteVerificationError(
+            "Compose-to-Compose guide contains an unrendered Markdown fence"
+        )
+
+    required_fragments = (
+        '<div class="highlight"><pre>',
+        "route-matrix",
+        "boxferry convert compose compose",
+    )
+    missing = [fragment for fragment in required_fragments if fragment not in guide]
+    if missing:
+        raise SiteVerificationError("Compose-to-Compose guide is missing rendered code blocks")
+
+
 def verify_site(site_directory: Path) -> None:
     """Validate stable routes, source metadata, and path-disclosure boundaries."""
     site = site_directory.resolve()
@@ -196,6 +214,8 @@ def verify_site(site_directory: Path) -> None:
     missing = [route for route in REQUIRED_ROUTES if not (site / route).is_file()]
     if missing:
         raise SiteVerificationError(f"required public routes are missing: {', '.join(missing)}")
+
+    _verify_rendered_documentation(site)
 
     missing_assets = [asset for asset in REQUIRED_ASSETS if not (site / asset).is_file()]
     if missing_assets:
