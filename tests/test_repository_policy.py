@@ -14,6 +14,24 @@ from scripts.generate_brand_assets import GENERATED_ASSET_PATHS
 ROOT = Path(__file__).resolve().parents[1]
 ACTION_PATTERN = re.compile(r"uses:\s+[^\s@]+@([0-9a-f]{40})\s+#\s+v?\d")
 COLOR_PATTERN = re.compile(r"#[0-9a-fA-F]{3,8}\b|(?:rgb|hsl)a?\(")
+EXACT_PYTHON_PIN_PATTERN = re.compile(
+    r"(?P<name>[a-z0-9][a-z0-9._-]*)==(?P<version>[0-9][0-9A-Za-z.+-]*)\Z"
+)
+
+
+def exact_python_pins(dependencies: list[str]) -> dict[str, str]:
+    """Return exact direct pins, rejecting ranges and duplicate package names."""
+    pins: dict[str, str] = {}
+    for dependency in dependencies:
+        match = EXACT_PYTHON_PIN_PATTERN.fullmatch(dependency)
+        if match is None:
+            raise ValueError(f"Python development dependency is not exactly pinned: {dependency}")
+
+        name = match.group("name")
+        if name in pins:
+            raise ValueError(f"Python development dependency is pinned more than once: {name}")
+        pins[name] = match.group("version")
+    return pins
 
 
 class RepositoryPolicyTests(unittest.TestCase):
@@ -337,13 +355,46 @@ class RepositoryPolicyTests(unittest.TestCase):
     def test_direct_python_tools_are_exactly_pinned(self) -> None:
         with (ROOT / "pyproject.toml").open("rb") as handle:
             configuration = tomllib.load(handle)
+        with (ROOT / "uv.lock").open("rb") as handle:
+            lock = tomllib.load(handle)
 
         dependencies = configuration["dependency-groups"]["dev"]
-        self.assertEqual(
-            dependencies,
-            ["ruff==0.16.3", "zensical==0.0.56", "zizmor==1.28.0"],
+        configured_pins = exact_python_pins(dependencies)
+        self.assertEqual(set(configured_pins), {"ruff", "zensical", "zizmor"})
+
+        root_package = next(
+            package for package in lock["package"] if package["name"] == "boxferry-website"
         )
-        self.assertEqual(configuration["tool"]["uv"]["required-version"], "==0.12.5")
+        locked_requirements = root_package["metadata"]["requires-dev"]["dev"]
+        locked_pins = exact_python_pins(
+            [
+                f"{requirement['name']}{requirement['specifier']}"
+                for requirement in locked_requirements
+            ]
+        )
+        self.assertEqual(locked_pins, configured_pins)
+
+        resolved_versions = {
+            package["name"]: package["version"]
+            for package in lock["package"]
+            if package["name"] in configured_pins
+        }
+        self.assertEqual(resolved_versions, configured_pins)
+
+        required_uv = configuration["tool"]["uv"]["required-version"]
+        self.assertRegex(required_uv, r"\A==[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?\Z")
+
+    def test_python_pin_parser_rejects_non_exact_and_duplicate_dependencies(self) -> None:
+        invalid_dependency_sets = (
+            ["ruff>=0.16.3"],
+            ["ruff~=0.16.3"],
+            ["ruff"],
+            ["ruff==0.16.3", "ruff==0.16.4"],
+        )
+
+        for dependencies in invalid_dependency_sets:
+            with self.subTest(dependencies=dependencies), self.assertRaises(ValueError):
+                exact_python_pins(dependencies)
 
     def test_spelling_gate_is_pinned_and_covers_repository_sources(self) -> None:
         package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
