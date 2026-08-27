@@ -12,7 +12,7 @@ dotted-keys-out-of-order = "error"
 key-empty = "error"
 tables-out-of-order = "error"
 
-# Tombi 1.4.0's embedded PyProject schema references non-embedded Ruff and uv schemas. Use a local,
+# Tombi's embedded PyProject schema references non-embedded Ruff and uv schemas. Use a local,
 # deliberately structural schema so fresh offline runners remain deterministic; uv and Ruff remain
 # the authoritative semantic validators for their respective configuration sections.
 [[schemas]]

@@ -12,7 +12,7 @@ Dependencies must have a direct, documented purpose and be locked to reproducibl
 | CSpell            | 10.0.1  | MIT               | Repository spelling validation                                              | Shared editor and deterministic CI configuration               |
 | Prettier          | 3.9.6   | MIT               | Markdown, JSON, YAML, CSS, and HTML formatting                              | Shared with the other BoxFerry repositories                    |
 | markdownlint-cli2 | 0.23.2  | MIT               | Markdown linting                                                            | Shared with the other BoxFerry repositories                    |
-| Tombi             | 1.4.0   | MIT               | TOML formatting and linting                                                 | Shared with the other BoxFerry repositories                    |
+| Tombi             | 1.4.1   | MIT               | TOML formatting and linting                                                 | Shared with the other BoxFerry repositories                    |
 | shfmt             | 3.13.1  | BSD-3-Clause      | Shell formatting                                                            | Shared with the other BoxFerry repositories                    |
 | ShellCheck        | 0.11.0  | GPL-3.0           | Shell linting                                                               | Shared with the other BoxFerry repositories                    |
 | Hadolint          | 2.15.1  | GPL-3.0           | Dockerfile linting                                                          | Shared with the other BoxFerry repositories                    |
