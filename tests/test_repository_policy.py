@@ -522,7 +522,40 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(rule["groupName"], "documentation sources")
         self.assertTrue(rule["automerge"])
         self.assertEqual(rule["automergeType"], "pr")
-        self.assertTrue(rule["platformAutomerge"])
+        self.assertFalse(rule["platformAutomerge"])
+
+    def test_renovate_automerge_is_green_gated_with_manual_exceptions(self) -> None:
+        configuration = json.loads((ROOT / ".github" / "renovate.json").read_text(encoding="utf-8"))
+        rules = {rule.get("description"): rule for rule in configuration["packageRules"]}
+
+        compatible = rules["Automerge tested non-major dependency updates"]
+        self.assertEqual(
+            compatible["matchUpdateTypes"],
+            ["minor", "patch", "pin", "digest", "pinDigest"],
+        )
+        self.assertTrue(compatible["automerge"])
+        self.assertEqual(compatible["automergeType"], "pr")
+        self.assertFalse(compatible["platformAutomerge"])
+
+        internal = rules["Do not delay BoxFerry and Lens releases"]
+        self.assertEqual(internal["minimumReleaseAge"], "0 days")
+        self.assertEqual(
+            internal["matchPackageNames"],
+            [
+                "boxferry",
+                "boxferry-model",
+                "boxferry-engine",
+                "boxferry-compose",
+                "boxferry-podman",
+                "boxferry-quadlet",
+                "compose-lens",
+                "podman-lens",
+                "quadlet-lens",
+            ],
+        )
+
+        checksum_review = rules["Require checksum review for downloaded file-quality tools"]
+        self.assertFalse(checksum_review["automerge"])
 
     def test_deployment_workflow_preserves_static_release_contract(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
