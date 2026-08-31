@@ -37,7 +37,7 @@ jobs:
         with:
           enable-cache: true
           # renovate: datasource=github-releases depName=astral-sh/uv
-          version: "0.12.6"
+          version: "0.12.7"
       - name: Install checksum-pinned native file-quality tools
         run: sudo bash scripts/install-file-tools.sh /usr/local/bin
       - name: Install pinned Lychee
