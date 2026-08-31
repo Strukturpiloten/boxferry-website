@@ -124,7 +124,7 @@ def _social_preview(mark_source: str, palette: dict[str, str]) -> str:
   aria-labelledby="title description"
 >
   <title id="title">BoxFerry social preview</title>
-  <desc id="description">Reliable N to N conversion of container application definitions</desc>
+  <desc id="description">Source-aware Docker Compose, Podman, and Quadlet conversion</desc>
   <style>
     .bf-logo-primary {{ color: {palette["--bf-brand-primary"]}; }}
     .bf-logo-secondary {{ color: {palette["--bf-brand-secondary"]}; }}

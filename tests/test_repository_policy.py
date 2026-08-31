@@ -17,6 +17,9 @@ COLOR_PATTERN = re.compile(r"#[0-9a-fA-F]{3,8}\b|(?:rgb|hsl)a?\(")
 EXACT_PYTHON_PIN_PATTERN = re.compile(
     r"(?P<name>[a-z0-9][a-z0-9._-]*)==(?P<version>[0-9][0-9A-Za-z.+-]*)\Z"
 )
+EXACT_NODE_PIN_PATTERN = re.compile(
+    r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\Z"
+)
 
 
 def exact_python_pins(dependencies: list[str]) -> dict[str, str]:
@@ -32,6 +35,14 @@ def exact_python_pins(dependencies: list[str]) -> dict[str, str]:
             raise ValueError(f"Python development dependency is pinned more than once: {name}")
         pins[name] = match.group("version")
     return pins
+
+
+def exact_node_pins(dependencies: dict[str, str]) -> dict[str, str]:
+    """Return exact Node pins, rejecting ranges, tags, and other selectors."""
+    for name, version in dependencies.items():
+        if EXACT_NODE_PIN_PATTERN.fullmatch(version) is None:
+            raise ValueError(f"Node development dependency is not exactly pinned: {name}@{version}")
+    return dependencies
 
 
 class RepositoryPolicyTests(unittest.TestCase):
@@ -412,10 +423,29 @@ class RepositoryPolicyTests(unittest.TestCase):
             with self.subTest(dependencies=dependencies), self.assertRaises(ValueError):
                 exact_python_pins(dependencies)
 
-    def test_spelling_gate_is_pinned_and_covers_repository_sources(self) -> None:
+    def test_direct_node_tools_are_exactly_pinned_and_locked(self) -> None:
         package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
-        self.assertEqual(package["devDependencies"]["cspell"], "10.0.1")
+        lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
 
+        configured_pins = exact_node_pins(package["devDependencies"])
+        self.assertEqual(set(configured_pins), {"cspell", "markdownlint-cli2", "prettier"})
+
+        locked_pins = exact_node_pins(lock["packages"][""]["devDependencies"])
+        self.assertEqual(locked_pins, configured_pins)
+
+        resolved_versions = {
+            name: lock["packages"][f"node_modules/{name}"]["version"] for name in configured_pins
+        }
+        self.assertEqual(resolved_versions, configured_pins)
+
+    def test_node_pin_parser_rejects_non_exact_dependencies(self) -> None:
+        invalid_versions = ("^10.0.1", "~10.0.1", ">=10.0.1", "latest", "10.0")
+
+        for version in invalid_versions:
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                exact_node_pins({"cspell": version})
+
+    def test_spelling_gate_covers_repository_sources(self) -> None:
         configuration = json.loads((ROOT / "cspell.json").read_text(encoding="utf-8"))
         self.assertTrue(configuration["useGitignore"])
         self.assertEqual(configuration["language"], "en,en-US")
@@ -492,7 +522,40 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(rule["groupName"], "documentation sources")
         self.assertTrue(rule["automerge"])
         self.assertEqual(rule["automergeType"], "pr")
-        self.assertTrue(rule["platformAutomerge"])
+        self.assertFalse(rule["platformAutomerge"])
+
+    def test_renovate_automerge_is_green_gated_with_manual_exceptions(self) -> None:
+        configuration = json.loads((ROOT / ".github" / "renovate.json").read_text(encoding="utf-8"))
+        rules = {rule.get("description"): rule for rule in configuration["packageRules"]}
+
+        compatible = rules["Automerge tested non-major dependency updates"]
+        self.assertEqual(
+            compatible["matchUpdateTypes"],
+            ["minor", "patch", "pin", "digest", "pinDigest"],
+        )
+        self.assertTrue(compatible["automerge"])
+        self.assertEqual(compatible["automergeType"], "pr")
+        self.assertFalse(compatible["platformAutomerge"])
+
+        internal = rules["Do not delay BoxFerry and Lens releases"]
+        self.assertEqual(internal["minimumReleaseAge"], "0 days")
+        self.assertEqual(
+            internal["matchPackageNames"],
+            [
+                "boxferry",
+                "boxferry-model",
+                "boxferry-engine",
+                "boxferry-compose",
+                "boxferry-podman",
+                "boxferry-quadlet",
+                "compose-lens",
+                "podman-lens",
+                "quadlet-lens",
+            ],
+        )
+
+        checksum_review = rules["Require checksum review for downloaded file-quality tools"]
+        self.assertFalse(checksum_review["automerge"])
 
     def test_deployment_workflow_preserves_static_release_contract(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
