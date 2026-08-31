@@ -9,6 +9,7 @@ from pathlib import Path
 
 from scripts.prepare_deployment import prepare_deployment
 from scripts.verify_site import (
+    COMPOSE_GUIDE_ROUTE,
     REQUIRED_ASSETS,
     REQUIRED_LINKS,
     REQUIRED_ROUTES,
@@ -38,6 +39,13 @@ class SiteVerificationTests(unittest.TestCase):
                 for link in (*REQUIRED_LINKS, *REQUIRED_SUPPORT_LINKS, SOURCE_MANIFEST_LINK)
             )
             path.write_text(f"<!doctype html><title>BoxFerry</title>{links}\n", encoding="utf-8")
+        compose_guide = self.site / COMPOSE_GUIDE_ROUTE
+        compose_guide.write_text(
+            compose_guide.read_text(encoding="utf-8")
+            + '<div class="highlight"><pre><code>name: route-matrix\n'
+            + "boxferry convert compose compose</code></pre></div>\n",
+            encoding="utf-8",
+        )
         for asset in REQUIRED_ASSETS:
             path = self.site / asset
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -100,6 +108,28 @@ class SiteVerificationTests(unittest.TestCase):
 
     def test_complete_site_passes(self) -> None:
         verify_site(self.site)
+
+    def test_unrendered_documentation_code_block_fails(self) -> None:
+        compose_guide = self.site / COMPOSE_GUIDE_ROUTE
+        compose_guide.write_text(
+            compose_guide.read_text(encoding="utf-8") + '<h2 id="yaml">```yaml</h2>\n',
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(SiteVerificationError, "unrendered Markdown fence"):
+            verify_site(self.site)
+
+    def test_missing_rendered_documentation_code_block_fails(self) -> None:
+        compose_guide = self.site / COMPOSE_GUIDE_ROUTE
+        compose_guide.write_text(
+            compose_guide.read_text(encoding="utf-8").replace(
+                '<div class="highlight"><pre>', "<div>"
+            ),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(SiteVerificationError, "missing rendered code blocks"):
+            verify_site(self.site)
 
     def test_missing_route_fails(self) -> None:
         (self.site / REQUIRED_ROUTES[-1]).unlink()
