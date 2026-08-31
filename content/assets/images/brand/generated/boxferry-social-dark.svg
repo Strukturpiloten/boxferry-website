@@ -6,7 +6,7 @@
   aria-labelledby="title description"
 >
   <title id="title">BoxFerry social preview</title>
-  <desc id="description">Open-source Docker Compose, Podman, and Quadlet conversion</desc>
+  <desc id="description">Source-aware Docker Compose, Podman, and Quadlet conversion</desc>
   <style>
     .bf-logo-primary { color: #5aa9ff; }
     .bf-logo-secondary { color: #71d1c2; }

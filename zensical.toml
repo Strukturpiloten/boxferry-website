@@ -1,6 +1,6 @@
 [project]
 site_name = "BoxFerry"
-site_description = "Open-source conversion between Docker Compose, Podman resources, and Quadlet"
+site_description = "Source-aware conversion between Docker Compose, Podman resources, and Quadlet"
 site_url = "https://boxferry.dev/"
 docs_dir = ".generated/docs"
 site_dir = "site"

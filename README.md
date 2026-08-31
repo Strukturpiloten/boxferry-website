@@ -1,7 +1,8 @@
 # BoxFerry website
 
-This repository builds the official [BoxFerry website](https://boxferry.dev/) and assembles the
-unified documentation below `/docs/`. The CLI, Rust library, and conversion engine live in the
+This repository builds the official [BoxFerry website](https://boxferry.dev/) for open-source,
+source-aware conversion between Docker Compose, Podman resources, and Podman Quadlet, and assembles
+the unified documentation below `/docs/`. The CLI, Rust library, and conversion engine live in the
 [BoxFerry source repository](https://github.com/Strukturpiloten/boxferry); each technical document
 remains in the repository that owns the documented behavior. This repository owns the homepage,
 shared navigation, visual identity, deterministic documentation assembly, site validation, and

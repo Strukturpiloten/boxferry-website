@@ -1,6 +1,6 @@
 ---
 title: BoxFerry
-description: Open-source conversion between Docker Compose, Podman resources, and Quadlet
+description: Source-aware conversion between Docker Compose, Podman resources, and Quadlet
 hide:
   - navigation
   - toc
@@ -20,11 +20,11 @@ hide:
         alt=""
       />
     </div>
-    <p class="bf-eyebrow">Open-source container conversion</p>
+    <p class="bf-eyebrow">Open-source, source-aware conversion</p>
     <h1>Convert Docker Compose, Podman, and Quadlet without losing intent.</h1>
     <p class="bf-lead">
-      BoxFerry converts container application definitions through one neutral model. It explains
-      unsupported, approximated, and omitted intent instead of silently discarding it.
+      BoxFerry provides source-aware conversion through one neutral model. It explains unsupported,
+      approximated, and omitted intent instead of silently discarding it.
     </p>
     <div class="bf-actions">
       <a class="md-button md-button--primary" href="docs/getting-started/">Get started</a>
