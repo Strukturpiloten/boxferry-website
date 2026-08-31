@@ -6,7 +6,7 @@
   aria-labelledby="title description"
 >
   <title id="title">BoxFerry social preview</title>
-  <desc id="description">Reliable N to N conversion of container application definitions</desc>
+  <desc id="description">Open-source Docker Compose, Podman, and Quadlet conversion</desc>
   <style>
     .bf-logo-primary { color: #176fc1; }
     .bf-logo-secondary { color: #187c70; }
