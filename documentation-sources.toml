@@ -7,7 +7,7 @@ staging-directory = ".generated/docs"
 [[repositories]]
 name = "boxferry"
 repository = "https://github.com/Strukturpiloten/boxferry.git"
-revision = "1b57269abced28582dbc5b834fd505604dd747f7"
+revision = "3abde5575c492b459f6a724444c6f19f021a511a"
 local-directories = ["../boxferry", "../.."]
 
 [[repositories.documents]]
@@ -41,7 +41,7 @@ destination = "_data/documentation-examples.toml"
 [[repositories]]
 name = "compose-lens"
 repository = "https://github.com/Strukturpiloten/compose-lens.git"
-revision = "c5585b547f07ccfea24043f16655bf0af74783a5"
+revision = "3aedd684d2bf5d3ff98375b037f4572bb75ba4fe"
 local-directories = ["../compose-lens"]
 
 [[repositories.documents]]
@@ -56,7 +56,7 @@ destination = "docs/api/compose-lens"
 [[repositories]]
 name = "podman-lens"
 repository = "https://github.com/Strukturpiloten/podman-lens.git"
-revision = "a3788feb15997875ae4455a65c2b2de91daaffd3"
+revision = "8afb6d7bca2af9a658d264ea3e30d1fbfd01aa07"
 local-directories = ["../podman-lens"]
 
 [[repositories.documents]]
@@ -71,7 +71,7 @@ destination = "docs/api/podman-lens"
 [[repositories]]
 name = "quadlet-lens"
 repository = "https://github.com/Strukturpiloten/quadlet-lens.git"
-revision = "9fc8161f4822339afa533ea07f4b1adb5432114b"
+revision = "5c3304481c3393d5176d890ea49e0c1571db5466"
 local-directories = ["../quadlet-lens"]
 
 [[repositories.documents]]
