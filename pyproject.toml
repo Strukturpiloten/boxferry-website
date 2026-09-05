@@ -24,4 +24,4 @@ line-ending = "lf"
 select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
 
 [tool.uv]
-required-version = "==0.12.8"
+required-version = "==0.12.9"
