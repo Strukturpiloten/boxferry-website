@@ -71,7 +71,7 @@ destination = "docs/api/podman-lens"
 [[repositories]]
 name = "quadlet-lens"
 repository = "https://github.com/Strukturpiloten/quadlet-lens.git"
-revision = "5c3304481c3393d5176d890ea49e0c1571db5466"
+revision = "843da2163b852b36f2635939d3698fb7e3085468"
 local-directories = ["../quadlet-lens"]
 
 [[repositories.documents]]
