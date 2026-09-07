@@ -61,6 +61,7 @@
     "Ruff",
     "Rustdoc",
     "RUSTDOCFLAGS",
+    "rustup",
     "shfmt",
     "shellcheck",
     "Stadthagen",
@@ -74,6 +75,9 @@
     "venv",
     "webspace",
     "wordmark",
+    "worktree",
+    "worktrees",
+    "xhigh",
     "Zensical",
     "zizmor"
   ]

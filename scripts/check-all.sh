@@ -26,7 +26,16 @@ report_failure() {
 
 trap report_failure ERR
 
+if (($# > 1)); then
+  fail "Usage: $0 [--check|--fix]"
+fi
 format_mode="${BOXFERRY_WEBSITE_FORMAT_MODE:-fix}"
+case "${1:-}" in
+  "") ;;
+  --check) format_mode="check" ;;
+  --fix) format_mode="fix" ;;
+  *) fail "Usage: $0 [--check|--fix]" ;;
+esac
 case "${format_mode}" in
   check | fix) ;;
   *) fail "BOXFERRY_WEBSITE_FORMAT_MODE must be check or fix" ;;

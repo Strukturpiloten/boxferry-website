@@ -77,3 +77,14 @@ Locked assembly may access GitHub to obtain exact revisions declared in
 `documentation-sources.toml`. Normal local validation uses sibling checkouts and does not download
 documentation sources. Rustdoc reuses the same local or revision-verified source selected for the
 Markdown build.
+
+## Agent-assisted verification
+
+Repository model defaults and role overrides live in [`.codex/`](../.codex/); permissions and
+workflow ownership remain defined in [`AGENTS.md`](../AGENTS.md). Reload or start a new trusted
+project session after updating configuration; an explicit session override can take precedence.
+
+Use `./scripts/check-all.sh --check` to run the complete gate without formatting repository-owned
+files. The default command (or `--fix`) still formats first. Both modes run the same validation;
+ignored caches and build artifacts may change. Verifiers report failures without fixing files,
+and the primary agent owns the final complete gate and any explicitly authorized merge.
