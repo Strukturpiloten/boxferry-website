@@ -1,42 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
-  <title id="title">BoxFerry compact mark</title>
+  <title id="title">BoxFerry Exchange mark</title>
   <style>
-    .bf-logo-primary { color: #176fc1; }
-    .bf-logo-secondary { color: #187c70; }
-    .bf-logo-accent { color: #a95700; }
-    .bf-logo-word { color: #111a27; }
+    .bf-logo-primary { color: #476018; }
+    .bf-logo-secondary { color: #476018; }
+    .bf-logo-accent { color: #8b4518; }
+    .bf-logo-word { color: #242919; }
   </style>
-  <rect
-    class="bf-logo-primary"
-    x="8"
-    y="9"
-    width="48"
-    height="35"
-    rx="6"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="3.5"
-  />
-  <path
-    class="bf-logo-primary"
-    d="M8 44h48l-7 10H15L8 44Z"
-    fill="none"
-    stroke="currentColor"
-    stroke-linejoin="round"
-    stroke-width="3.5"
-  />
-  <path
-    class="bf-logo-secondary"
-    d="M16 20c12 0 20 14 32 14M16 34c12 0 20-14 32-14"
-    fill="none"
-    stroke="currentColor"
-    stroke-linecap="round"
-    stroke-width="3"
-  />
-  <g class="bf-logo-accent" fill="currentColor">
-    <circle cx="16" cy="20" r="3.5" />
-    <circle cx="16" cy="34" r="3.5" />
-    <circle cx="48" cy="20" r="3.5" />
-    <circle cx="48" cy="34" r="3.5" />
-  </g>
+  <path class="bf-logo-primary" d="M10 11h28l16 17H27v-7H10zM54 53H26L10 36h27v7h17z" fill="currentColor" />
 </svg>

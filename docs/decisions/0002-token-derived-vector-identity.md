@@ -1,6 +1,6 @@
 # 0002: Token-derived vector identity
 
-- Status: Accepted
+- Status: Superseded by [0004](0004-signal-identity-and-format-growth.md)
 - Date: 2026-08-19
 
 ## Context

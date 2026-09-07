@@ -3,8 +3,9 @@
 Accepted decisions define the website contract. A conflicting change must update or supersede the
 relevant decision rather than silently changing the implementation.
 
-| Decision                                            | Status   | Subject                                                      |
-| --------------------------------------------------- | -------- | ------------------------------------------------------------ |
-| [0001](0001-zensical-unified-documentation-site.md) | Accepted | Zensical unified documentation site and repository ownership |
-| [0002](0002-token-derived-vector-identity.md)       | Accepted | Token-derived vector identity                                |
-| [0003](0003-hetzner-atomic-static-deployment.md)    | Accepted | Hetzner atomic static deployment                             |
+| Decision                                            | Status             | Subject                                                      |
+| --------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| [0001](0001-zensical-unified-documentation-site.md) | Accepted           | Zensical unified documentation site and repository ownership |
+| [0002](0002-token-derived-vector-identity.md)       | Superseded by 0004 | Token-derived vector identity                                |
+| [0003](0003-hetzner-atomic-static-deployment.md)    | Accepted           | Hetzner atomic static deployment                             |
+| [0004](0004-signal-identity-and-format-growth.md)   | Accepted           | Signal identity and scalable format discovery                |

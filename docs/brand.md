@@ -6,21 +6,20 @@ documentation, command-line examples, small navigation controls, and social prev
 ## Design principles
 
 - Show N:N movement without implying one privileged conversion direction.
-- Combine container structure and ferry transport without drawing a detailed illustration.
+- Use opposing solid shapes to suggest conversion without encoding a fixed format count.
 - Prefer simple geometry that remains recognizable at 16 pixels.
 - Keep production colors derived from the central design-token stylesheet.
 - Use local system typography; do not require a remote font or browser-side dependency.
 
-## Evaluated directions
+## Selected direction
 
-| Direction   | Preview                                          | Evaluation                                                                                                               |
-| ----------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Cargo route | [Vector concept](brand-concepts/cargo-route.svg) | Selected. Four endpoints and crossing routes communicate N:N conversion inside a container carried by a simplified hull. |
-| Ferry wake  | [Vector concept](brand-concepts/ferry-wake.svg)  | Strong transport metaphor, but does not communicate format conversion clearly enough.                                    |
-| BF monogram | [Vector concept](brand-concepts/bf-monogram.svg) | Compact and readable, but less distinctive and too dependent on knowing the product name.                                |
+Signal uses a charcoal and lime palette, square controls, a centered product introduction, and the
+Exchange mark. The two opposing solid shapes suggest conversion between formats without encoding
+a particular format count. The former cargo-route, ferry-wake, and monogram studies remain in
+`docs/brand-concepts/` as historical concepts; they are not the production identity.
 
-The cargo-route direction is the production identity. Its crossing lines describe independent
-input-to-output routes rather than a synchronization symbol or one-way migration arrow.
+[Decision 0004](decisions/0004-signal-identity-and-format-growth.md) supersedes the original identity
+selection while retaining its token-derived SVG pipeline and privacy constraints.
 
 ## Production assets
 
@@ -30,7 +29,7 @@ The monochrome originals are:
 - `content/assets/images/brand/boxferry-wordmark.svg` for product lockups.
 
 The mark should not render below 16 pixels. The wordmark should not render below 120 pixels wide.
-Keep clear space around either asset equal to at least one endpoint circle in the compact mark.
+Keep clear space around either asset equal to at least 8 units of the mark’s 64-unit view box.
 
 `scripts/generate_brand_assets.py` creates dark, light, favicon, and social-preview SVG variants.
 It reads every production color from `content/assets/stylesheets/tokens.css`. Generated variants are

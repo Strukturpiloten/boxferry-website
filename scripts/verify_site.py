@@ -7,6 +7,8 @@ import argparse
 import json
 import re
 import sys
+import tomllib
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,7 +94,7 @@ REQUIRED_LINKS = (
     "./legal-notice/",
     "./privacy-policy/",
     "https://www.strukturpiloten.de/kontakt",
-    "docs/guides/",
+    "./docs/guides/",
 )
 REQUIRED_SUPPORT_LINKS = (
     "https://github.com/Strukturpiloten/boxferry/discussions",
@@ -125,6 +127,51 @@ SOURCE_REPOSITORIES = (
 
 class SiteVerificationError(RuntimeError):
     """Describe an incomplete or privacy-unsafe static site."""
+
+
+class _HomepageFormats(HTMLParser):
+    """Read the rendered format inventory and input-guide destinations."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.chips: list[str | None] = []
+        self.guides: list[tuple[str | None, str | None]] = []
+        self.headings: list[str | None] = []
+
+    def handle_starttag(self, tag: str, attributes: list[tuple[str, str | None]]) -> None:
+        attrs = dict(attributes)
+        classes = (attrs.get("class") or "").split()
+        if tag == "li" and "bf-format-chip" in classes:
+            self.chips.append(attrs.get("data-bf-format"))
+        if tag == "a" and "bf-format-guide" in classes:
+            self.guides.append((attrs.get("data-bf-format"), attrs.get("href")))
+        if tag == "h1":
+            self.headings.append(attrs.get("id"))
+
+
+def _verify_homepage_formats(site: Path, formats: list[dict[str, str]]) -> None:
+    """Require one rendered entry and a published input guide per configured format."""
+    identifiers = [item["id"] for item in formats]
+    if not identifiers or len(set(identifiers)) != len(identifiers):
+        raise SiteVerificationError("homepage format identifiers are empty or duplicated")
+    expected_guides = []
+    for item in formats:
+        guide = item["guide"]
+        if not re.fullmatch(r"docs/(?:[a-z0-9-]+/)+", guide):
+            raise SiteVerificationError("homepage input guide must be a site-relative docs route")
+        if not (site / guide / "index.html").is_file():
+            raise SiteVerificationError(f"homepage input guide is missing: {guide}")
+        expected_guides.append((item["id"], guide))
+
+    parser = _HomepageFormats()
+    parser.feed((site / "index.html").read_text(encoding="utf-8"))
+    if parser.headings != ["__skip"]:
+        raise SiteVerificationError("homepage must have one heading at its skip-link target")
+    if parser.chips != identifiers:
+        raise SiteVerificationError("homepage format chips do not match the supported formats")
+    guides = [(identifier, (href or "").removeprefix("./")) for identifier, href in parser.guides]
+    if guides != expected_guides:
+        raise SiteVerificationError("homepage input guides do not match the supported formats")
 
 
 def _verify_deployment_artifacts(site: Path) -> None:
@@ -232,6 +279,10 @@ def verify_site(site_directory: Path) -> None:
             raise SiteVerificationError(f"Rustdoc entry route is not a valid redirect: {slug}")
 
     _verify_rule_routes_and_search(site)
+
+    with (ROOT / "zensical.toml").open("rb") as handle:
+        formats = tomllib.load(handle)["project"]["extra"]["formats"]
+    _verify_homepage_formats(site, formats)
 
     homepage = (site / "index.html").read_text(encoding="utf-8")
     missing_links = [link for link in REQUIRED_LINKS if f'href="{link}"' not in homepage]

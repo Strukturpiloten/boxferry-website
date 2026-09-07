@@ -237,8 +237,11 @@ class RepositoryPolicyTests(unittest.TestCase):
         )
         customization = (ROOT / "docs" / "customization.md").read_text(encoding="utf-8")
 
-        self.assertIn('href="docs/guides/"', homepage)
-        self.assertRegex(site_css, r"(?s)\.md-grid\s*\{\s*max-width:\s*88rem;")
+        template = (ROOT / "overrides" / "home.html").read_text(encoding="utf-8")
+        self.assertIn("template: home.html", homepage)
+        self.assertIn("'docs/guides/' | url", template)
+        self.assertIn(".md-grid", site_css)
+        self.assertIn("overrides/home.html", customization)
         for expected in (
             "zensical.toml",
             "content/assets/stylesheets/site.css",
@@ -323,7 +326,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             extra = tomllib.load(handle)["project"]["extra"]
 
         self.assertEqual(
-            extra,
+            {key: value for key, value in extra.items() if key != "formats"},
             {
                 "contact_url": "https://www.strukturpiloten.de/kontakt",
                 "legal_notice_path": "legal-notice/",

@@ -1,0 +1,96 @@
+{% extends "main.html" %} {% block content %}
+<div class="bf-home">
+  <section class="bf-hero" aria-labelledby="__skip">
+    <p class="bf-eyebrow">Open source / Source-aware conversion</p>
+    <h1 id="__skip" tabindex="-1">One command.<br /><span>A different format.</span></h1>
+    <p class="bf-lead">
+      Move between {{ config.extra.formats | map(attribute="label") | join(", ") }}. BoxFerry
+      explains what translates, what changes, and what cannot be carried across.
+    </p>
+    <div class="bf-actions">
+      <a class="md-button md-button--primary" href="{{ 'docs/getting-started/' | url }}">
+        Get started <span aria-hidden="true">↗</span>
+      </a>
+      <a class="bf-text-link" href="{{ config.repo_url }}">View source on GitHub</a>
+    </div>
+    <p class="bf-platforms">Linux CLI · Rust library · Local conversion</p>
+  </section>
+
+  <section class="bf-conversion" aria-labelledby="conversion-model">
+    <div class="bf-panel-heading">
+      <h2 id="conversion-model">Formats in. Formats out.</h2>
+      <span>One neutral model</span>
+    </div>
+    <div class="bf-model">
+      <ul class="bf-format-list" aria-label="Supported input and output formats">
+        {% for format in config.extra.formats %}
+        <li class="bf-format-chip" data-bf-format="{{ format.id }}">{{ format.label }}</li>
+        {% endfor %}
+      </ul>
+      <div class="bf-model-connector" aria-hidden="true">↕</div>
+      <div class="bf-neutral-model">
+        <span class="bf-inline-mark" aria-hidden="true">{% include "partials/logo.html" %}</span>
+        BoxFerry neutral model
+      </div>
+      <p>Read and write supported formats. Check compatibility for route-specific limits.</p>
+    </div>
+    <div class="bf-command">
+      <p class="bf-eyebrow">Example / Compose → Quadlet</p>
+      {{ page.content }}
+      <a class="bf-text-link" href="{{ 'docs/guides/' | url }}">Conversion guides ↗</a>
+    </div>
+  </section>
+
+  <section class="bf-principles" aria-label="Why BoxFerry">
+    <article>
+      <p class="bf-eyebrow">01 / Flexibility</p>
+      <h2>Start with what you have.</h2>
+      <p>Read and write every supported format, including same-format output.</p>
+    </article>
+    <article>
+      <p class="bf-eyebrow">02 / Clarity</p>
+      <h2>See what changes.</h2>
+      <p>Unsupported, approximated, and omitted intent is explained through diagnostics.</p>
+    </article>
+    <article>
+      <p class="bf-eyebrow">03 / Control</p>
+      <h2>Keep your input local.</h2>
+      <p>No runtime telemetry. Error reports exclude raw input and environment data.</p>
+    </article>
+  </section>
+
+  <section class="bf-formats" aria-labelledby="choose-format">
+    <div class="bf-section-heading">
+      <div>
+        <p class="bf-eyebrow">Choose your starting point</p>
+        <h2 id="choose-format">What are you working with?</h2>
+      </div>
+      <p>
+        Choose an input format, then explore its output routes.
+        <a href="{{ 'docs/reference/compatibility/' | url }}">Check compatibility</a>
+        for supported features and limits.
+      </p>
+    </div>
+    <div class="bf-format-guides">
+      {% for format in config.extra.formats %}
+      <a class="bf-format-guide" data-bf-format="{{ format.id }}" href="{{ format.guide | url }}">
+        <h3>{{ format.label }}</h3>
+        <p>{{ format.description }}</p>
+        <span>Explore conversion guides <span aria-hidden="true">↗</span></span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="bf-maintainer" aria-labelledby="community">
+    <div>
+      <h2 id="community">Built in the open.</h2>
+      <p>
+        Maintained by Strukturpiloten OHG and the BoxFerry community. Explore the code, report an
+        issue, or help improve the next conversion.
+      </p>
+    </div>
+    <a class="bf-text-link" href="{{ 'support/' | url }}">Community &amp; support ↗</a>
+  </section>
+</div>
+{% endblock %}

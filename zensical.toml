@@ -1,6 +1,6 @@
 [project]
 site_name = "BoxFerry"
-site_description = "Source-aware conversion between Docker Compose, Podman resources, and Quadlet"
+site_description = "Source-aware container configuration conversion with clear diagnostics"
 site_url = "https://boxferry.dev/"
 docs_dir = ".generated/docs"
 site_dir = "site"
@@ -141,6 +141,26 @@ contact_url = "https://www.strukturpiloten.de/kontakt"
 legal_notice_path = "legal-notice/"
 privacy_policy_path = "privacy-policy/"
 strukturpiloten_url = "https://www.strukturpiloten.de/"
+
+# Only formats with published support and input guides belong in this list.
+# Both the homepage diagram and guide entries are rendered from these records.
+[[project.extra.formats]]
+id = "compose"
+label = "Docker Compose"
+description = "Start with a Compose file and choose an output format."
+guide = "docs/guides/compose-input/"
+
+[[project.extra.formats]]
+id = "podman"
+label = "Podman resources"
+description = "Start with Podman resources and choose an output format."
+guide = "docs/guides/podman-input/"
+
+[[project.extra.formats]]
+id = "quadlet"
+label = "Quadlet"
+description = "Start with Quadlet files and choose an output format."
+guide = "docs/guides/quadlet-input/"
 
 [project.plugins.offline]
 enabled = false
