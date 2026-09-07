@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -14,10 +15,12 @@ from scripts.verify_site import (
     REQUIRED_LINKS,
     REQUIRED_ROUTES,
     REQUIRED_SUPPORT_LINKS,
+    ROOT,
     RUSTDOC_ROUTES,
     SOURCE_MANIFEST_LINK,
     SOURCE_REPOSITORIES,
     SiteVerificationError,
+    _verify_homepage_formats,
     verify_site,
 )
 
@@ -104,7 +107,75 @@ class SiteVerificationTests(unittest.TestCase):
             '{"docs":[{"title":"BFC0001: compose-model-invalid"}]}\n',
             encoding="utf-8",
         )
+        with (ROOT / "zensical.toml").open("rb") as handle:
+            self.formats = tomllib.load(handle)["project"]["extra"]["formats"]
+        self._write_homepage_formats(self.formats)
         prepare_deployment(self.site, revision=REVISION)
+
+    def _write_homepage_formats(self, formats: list[dict[str, str]]) -> None:
+        for item in formats:
+            guide = self.site / item["guide"] / "index.html"
+            guide.parent.mkdir(parents=True, exist_ok=True)
+            guide.write_text("<!doctype html><title>Input guide</title>", encoding="utf-8")
+        chips = "".join(
+            f'<li class="bf-format-chip" data-bf-format="{item["id"]}">{item["id"]}</li>'
+            for item in formats
+        )
+        guides = "".join(
+            f'<a class="bf-format-guide" data-bf-format="{item["id"]}" '
+            f'href="./{item["guide"]}">Input guide</a>'
+            for item in formats
+        )
+        links = "".join(f'<a href="{link}">Link</a>' for link in REQUIRED_LINKS)
+        (self.site / "index.html").write_text(
+            f'<!doctype html><title>BoxFerry</title><h1 id="__skip">Convert</h1>'
+            f"<ul>{chips}</ul>{guides}{links}",
+            encoding="utf-8",
+        )
+
+    def test_homepage_handles_three_five_and_six_formats(self) -> None:
+        for count in (3, 5, 6):
+            formats = [
+                {"id": f"format-{index}", "guide": f"docs/guides/format-{index}/"}
+                for index in range(count)
+            ]
+            with self.subTest(count=count):
+                self._write_homepage_formats(formats)
+                _verify_homepage_formats(self.site, formats)
+
+    def test_homepage_rejects_an_unpublished_input_guide(self) -> None:
+        (self.site / self.formats[0]["guide"] / "index.html").unlink()
+        with self.assertRaisesRegex(SiteVerificationError, "input guide is missing"):
+            _verify_homepage_formats(self.site, self.formats)
+
+    def test_homepage_rejects_a_stale_format_inventory(self) -> None:
+        self._write_homepage_formats(self.formats[:-1])
+        with self.assertRaisesRegex(SiteVerificationError, "format chips"):
+            _verify_homepage_formats(self.site, self.formats)
+
+    def test_homepage_rejects_a_guide_link_to_the_wrong_format(self) -> None:
+        homepage = self.site / "index.html"
+        homepage.write_text(
+            homepage.read_text(encoding="utf-8").replace(
+                f"./{self.formats[0]['guide']}", f"./{self.formats[1]['guide']}"
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(SiteVerificationError, "input guides do not match"):
+            _verify_homepage_formats(self.site, self.formats)
+
+    def test_homepage_rejects_duplicated_formats(self) -> None:
+        with self.assertRaisesRegex(SiteVerificationError, "duplicated"):
+            _verify_homepage_formats(self.site, self.formats + self.formats[:1])
+
+    def test_homepage_requires_its_keyboard_skip_target(self) -> None:
+        homepage = self.site / "index.html"
+        homepage.write_text(
+            homepage.read_text(encoding="utf-8").replace('id="__skip"', 'id="intro"'),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(SiteVerificationError, "skip-link target"):
+            _verify_homepage_formats(self.site, self.formats)
 
     def test_complete_site_passes(self) -> None:
         verify_site(self.site)
@@ -185,7 +256,7 @@ class SiteVerificationTests(unittest.TestCase):
     def test_missing_required_link_fails(self) -> None:
         homepage = self.site / "index.html"
         homepage.write_text(
-            homepage.read_text(encoding="utf-8").replace(REQUIRED_LINKS[-1], ""),
+            homepage.read_text(encoding="utf-8").replace(f'href="{REQUIRED_LINKS[-1]}"', 'href=""'),
             encoding="utf-8",
         )
 

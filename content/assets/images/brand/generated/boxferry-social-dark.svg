@@ -6,53 +6,21 @@
   aria-labelledby="title description"
 >
   <title id="title">BoxFerry social preview</title>
-  <desc id="description">Source-aware Docker Compose, Podman, and Quadlet conversion</desc>
+  <desc id="description">Source-aware container configuration conversion</desc>
   <style>
-    .bf-logo-primary { color: #5aa9ff; }
-    .bf-logo-secondary { color: #71d1c2; }
-    .bf-logo-accent { color: #ffb454; }
+    .bf-logo-primary { color: #d2f38a; }
+    .bf-logo-secondary { color: #d2f38a; }
+    .bf-logo-accent { color: #f5c280; }
   </style>
-  <rect width="1200" height="630" rx="48" fill="#090e18" />
-  <rect x="52" y="52" width="1096" height="526" rx="36" fill="#111a2a" />
+  <rect width="1200" height="630" rx="48" fill="#141513" />
+  <rect x="52" y="52" width="1096" height="526" rx="36" fill="#1c1e19" />
   <g transform="translate(104 170) scale(4)">
-    <rect
-    class="bf-logo-primary"
-    x="8"
-    y="9"
-    width="48"
-    height="35"
-    rx="6"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="3.5"
-  />
-  <path
-    class="bf-logo-primary"
-    d="M8 44h48l-7 10H15L8 44Z"
-    fill="none"
-    stroke="currentColor"
-    stroke-linejoin="round"
-    stroke-width="3.5"
-  />
-  <path
-    class="bf-logo-secondary"
-    d="M16 20c12 0 20 14 32 14M16 34c12 0 20-14 32-14"
-    fill="none"
-    stroke="currentColor"
-    stroke-linecap="round"
-    stroke-width="3"
-  />
-  <g class="bf-logo-accent" fill="currentColor">
-    <circle cx="16" cy="20" r="3.5" />
-    <circle cx="16" cy="34" r="3.5" />
-    <circle cx="48" cy="20" r="3.5" />
-    <circle cx="48" cy="34" r="3.5" />
-  </g>
+    <path class="bf-logo-primary" d="M10 11h28l16 17H27v-7H10zM54 53H26L10 36h27v7h17z" fill="currentColor" />
   </g>
   <text
     x="400"
     y="280"
-    fill="#f4f7fb"
+    fill="#f3f4ed"
     font-family="ui-sans-serif, system-ui, sans-serif"
     font-size="96"
     font-weight="750"
@@ -63,10 +31,10 @@
   <text
     x="404"
     y="355"
-    fill="#aebbd0"
+    fill="#b9bdae"
     font-family="ui-sans-serif, system-ui, sans-serif"
     font-size="34"
   >
-    Container definitions, carried safely.
+    Change formats. See what changes.
   </text>
 </svg>
