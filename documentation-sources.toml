@@ -56,7 +56,7 @@ destination = "docs/api/compose-lens"
 [[repositories]]
 name = "podman-lens"
 repository = "https://github.com/Strukturpiloten/podman-lens.git"
-revision = "479c671f375dd0bb215e22062cb0564682d35749"
+revision = "6eed2ee9a6f81286f9a7e1e0a68f03ae092b8d14"
 local-directories = ["../podman-lens"]
 
 [[repositories.documents]]
@@ -71,7 +71,7 @@ destination = "docs/api/podman-lens"
 [[repositories]]
 name = "quadlet-lens"
 repository = "https://github.com/Strukturpiloten/quadlet-lens.git"
-revision = "06e12f094a5ff4b84f294cbc01745d5b75a54ea3"
+revision = "3e325696d16c6b274b3a0c28b906c5f5414190b8"
 local-directories = ["../quadlet-lens"]
 
 [[repositories.documents]]
