@@ -7,7 +7,7 @@ staging-directory = ".generated/docs"
 [[repositories]]
 name = "boxferry"
 repository = "https://github.com/Strukturpiloten/boxferry.git"
-revision = "785d0acae7b40d866453d9e7456307457b90f7dd"
+revision = "a4f22af4cb905097356db593736bc8c0405a19cd"
 local-directories = ["../boxferry", "../.."]
 
 [[repositories.documents]]
