@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class AgentConfigurationTests(unittest.TestCase):
     def test_primary_and_bounded_defaults(self) -> None:
         config = tomllib.loads((ROOT / ".codex/config.toml").read_text(encoding="utf-8"))
-        self.assertEqual(config["model"], "gpt-6-astra")
-        self.assertEqual(config["model_reasoning_effort"], "high")
+        self.assertEqual(config["model"], "gpt-5.6-sol")
+        self.assertEqual(config["model_reasoning_effort"], "xhigh")
         self.assertTrue(config["agents"]["enabled"])
         self.assertEqual(config["agents"]["max_concurrent_threads_per_session"], 3)
         self.assertEqual(config["agents"]["default_subagent_model"], "gpt-5.6-terra")
