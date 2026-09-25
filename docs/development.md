@@ -83,8 +83,9 @@ Markdown build.
 Repository model defaults and role overrides live in [`.codex/`](../.codex/); permissions and
 workflow ownership remain defined in [`AGENTS.md`](../AGENTS.md). Reload or start a new trusted
 project session after updating configuration; an explicit session override can take precedence.
+Keep any explicit primary-session override aligned with Astra/xhigh.
 
 Use `./scripts/check-all.sh --check` to run the complete gate without formatting repository-owned
 files. The default command (or `--fix`) still formats first. Both modes run the same validation;
 ignored caches and build artifacts may change. Verifiers report failures without fixing files,
-and the primary agent owns the final complete gate and any explicitly authorized merge.
+and the primary agent owns the final complete gate and merges covered by the workspace standing authorization in `AGENTS.md`.
