@@ -16,8 +16,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validation-plan:
+    name: Validation plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      profile: ${{ steps.plan.outputs.profile }}
+    steps:
+      - name: Check out tested revision and comparison history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out trusted PR base policy
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .validation-base
+          persist-credentials: false
+      - name: Select validation profile
+        id: plan
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          profile=full
+          if [[ "${EVENT_NAME}" == pull_request &&
+                -f .validation-base/scripts/validation-plan.py ]]; then
+            profile="$(python3 .validation-base/scripts/validation-plan.py \
+              --repository-root "${GITHUB_WORKSPACE}" \
+              --base "${BASE_SHA}" --tested "${TESTED_SHA}")"
+          fi
+          if [[ "${profile}" != full && "${profile}" != maintenance ]]; then
+            echo '::error::Validation policy produced an invalid profile.'
+            exit 1
+          fi
+          printf 'profile=%s\n' "${profile}" >> "${GITHUB_OUTPUT}"
+          printf 'Website validation profile: %s\n' "${profile}"
+          printf "## Website validation\n\nProfile: \`%s\`\n" "${profile}" >> "${GITHUB_STEP_SUMMARY}"
+
   quality:
     name: Format, lint, test, and build
+    needs: validation-plan
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -33,46 +77,65 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Install pinned uv toolchain
+        if: needs.validation-plan.outputs.profile == 'full'
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: true
           # renovate: datasource=github-releases depName=astral-sh/uv
           version: "0.12.18"
       - name: Install checksum-pinned native file-quality tools
-        run: sudo bash scripts/install-file-tools.sh /usr/local/bin
-      - name: Install pinned Lychee
-        # renovate: datasource=crate depName=lychee
-        run: cargo install --locked --version 0.24.2 lychee
+        if: needs.validation-plan.outputs.profile == 'full'
+        run: |
+          set -euo pipefail
+          tool_dir="${RUNNER_TEMP}/boxferry-website-tools"
+          bash scripts/install-file-tools.sh "${tool_dir}"
+          printf '%s\n' "${tool_dir}" >> "${GITHUB_PATH}"
+      - name: Install checksum-pinned Lychee for maintenance prose
+        if: needs.validation-plan.outputs.profile == 'maintenance'
+        run: |
+          set -euo pipefail
+          tool_dir="${RUNNER_TEMP}/boxferry-website-tools"
+          bash scripts/install-file-tools.sh "${tool_dir}" --lychee-only
+          printf '%s\n' "${tool_dir}" >> "${GITHUB_PATH}"
       - name: Run the complete deterministic repository gate
+        if: needs.validation-plan.outputs.profile == 'full'
         env:
           BOXFERRY_WEBSITE_FORMAT_MODE: check
           BOXFERRY_WEBSITE_SOURCE_MODE: locked
         run: ./scripts/check-all.sh
+      - name: Check repository maintenance prose and local links
+        if: needs.validation-plan.outputs.profile == 'maintenance'
+        run: bash scripts/check-maintenance-docs.sh
 
   pr-gate:
     name: PR gate
     if: always()
-    needs: [quality]
+    needs: [validation-plan, quality]
     runs-on: ubuntu-24.04
     steps:
-      - name: Require every deterministic PR job to succeed
+      - name: Require the planned validation job to succeed
         shell: bash
         env:
+          PLAN_RESULT: ${{ needs.validation-plan.result }}
+          PROFILE: ${{ needs.validation-plan.outputs.profile }}
           QUALITY_RESULT: ${{ needs.quality.result }}
         run: |
           set -euo pipefail
 
-          printf 'Required PR job Format, lint, test, and build: %s\n' "${QUALITY_RESULT}"
+          printf 'Plan: %s; profile: %s; quality: %s\n' \
+            "${PLAN_RESULT}" "${PROFILE}" "${QUALITY_RESULT}"
           {
             printf '## Required PR job results\n\n'
             printf '| Job | Result |\n'
             printf '| --- | --- |\n'
+            printf "| Validation plan | \`%s\` |\n" "${PLAN_RESULT}"
+            printf "| Profile | \`%s\` |\n" "${PROFILE}"
             printf "| Format, lint, test, and build | \`%s\` |\n" "${QUALITY_RESULT}"
           } >> "${GITHUB_STEP_SUMMARY}"
 
-          if [[ "${QUALITY_RESULT}" != "success" ]]; then
-            echo "::error title=Required PR job did not succeed::Format, lint, test, and build concluded ${QUALITY_RESULT}."
-            printf 'Required PR job did not succeed: Format, lint, test, and build concluded %s.\n' \
-              "${QUALITY_RESULT}" >&2
+          if [[ "${PLAN_RESULT}" != success ]] ||
+             [[ "${QUALITY_RESULT}" != success ]] ||
+             { [[ "${PROFILE}" != full ]] && [[ "${PROFILE}" != maintenance ]]; }; then
+            echo '::error::The planned website validation did not complete successfully.'
             exit 1
           fi

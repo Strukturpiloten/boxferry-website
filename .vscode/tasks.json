@@ -2,6 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "BoxFerry Website: Check changed files",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/check-changes.sh",
+      "problemMatcher": []
+    },
+    {
       "label": "BoxFerry Website: Format, lint, test, and build",
       "type": "process",
       "command": "${workspaceFolder}/scripts/check-all.sh",

@@ -2,7 +2,16 @@
 
 set -Eeuo pipefail
 
+if (($# > 2)); then
+  printf 'Usage: %s [install-directory] [--lychee-only]\n' "$0" >&2
+  exit 2
+fi
 readonly install_directory="${1:-/usr/local/bin}"
+readonly install_mode="${2:-full}"
+if [[ "${install_mode}" != full && "${install_mode}" != --lychee-only ]]; then
+  printf 'Usage: %s [install-directory] [--lychee-only]\n' "$0" >&2
+  exit 2
+fi
 
 # renovate: datasource=github-releases depName=tombi-toml/tombi
 readonly tombi_version="1.4.1"
@@ -14,6 +23,8 @@ readonly shellcheck_version="0.11.0"
 readonly hadolint_version="2.15.1"
 # renovate: datasource=github-releases depName=rhysd/actionlint
 readonly actionlint_version="1.7.12"
+# renovate: datasource=github-releases depName=lycheeverse/lychee releasePrefix=lychee-v
+readonly lychee_version="0.24.2"
 
 case "$(uname -m)" in
   x86_64)
@@ -25,6 +36,8 @@ case "$(uname -m)" in
     readonly shfmt_checksum="fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1"
     readonly shellcheck_checksum="8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
     readonly hadolint_checksum="c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507"
+    readonly lychee_architecture="x86_64-unknown-linux-gnu"
+    readonly lychee_checksum="1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
     ;;
   aarch64 | arm64)
     readonly release_architecture="aarch64"
@@ -35,6 +48,8 @@ case "$(uname -m)" in
     readonly shfmt_checksum="32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7"
     readonly shellcheck_checksum="12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"
     readonly hadolint_checksum="f6198ef8090f404dbb771abfee086eb8c48ac177f30da7fd3510aca35b344b5d"
+    readonly lychee_architecture="aarch64-unknown-linux-gnu"
+    readonly lychee_checksum="91a7bd65685da41b90ccb9bc867a3d649a7818042dae04ff405e55a25bddee4c"
     ;;
   *)
     printf 'Unsupported file-tool architecture: %s\n' "$(uname -m)" >&2
@@ -58,6 +73,25 @@ download() {
 }
 
 install -d "${install_directory}"
+
+lychee_archive="${temporary_directory}/lychee.tar.gz"
+download \
+  "https://github.com/lycheeverse/lychee/releases/download/lychee-v${lychee_version}/lychee-${lychee_architecture}.tar.gz" \
+  "${lychee_archive}" "${lychee_checksum}"
+tar --extract --gzip --file "${lychee_archive}" --directory "${temporary_directory}" \
+  --no-same-owner --no-same-permissions "lychee-${lychee_architecture}/lychee"
+lychee_binary="${temporary_directory}/lychee-${lychee_architecture}/lychee"
+if [[ ! -f "${lychee_binary}" || -L "${lychee_binary}" ||
+  "$("${lychee_binary}" --version)" != "lychee ${lychee_version}" ]]; then
+  printf 'Lychee release archive did not contain the expected executable version.\n' >&2
+  exit 1
+fi
+install -m 0755 "${lychee_binary}" "${install_directory}/lychee"
+
+if [[ "${install_mode}" == --lychee-only ]]; then
+  printf 'Installed Lychee %s.\n' "${lychee_version}"
+  exit 0
+fi
 
 tombi_archive="${temporary_directory}/tombi.tar.gz"
 download \
@@ -111,6 +145,7 @@ tar --extract --gzip --file "${temporary_directory}/${actionlint_archive}" \
   --directory "${temporary_directory}" actionlint
 install -m 0755 "${temporary_directory}/actionlint" "${install_directory}/actionlint"
 
-printf 'Installed Tombi %s, shfmt %s, ShellCheck %s, Hadolint %s, and actionlint %s.\n' \
+printf 'Installed Lychee %s, Tombi %s, shfmt %s, ShellCheck %s, Hadolint %s, and actionlint %s.\n' \
+  "${lychee_version}" \
   "${tombi_version}" "${shfmt_version}" "${shellcheck_version}" "${hadolint_version}" \
   "${actionlint_version}"

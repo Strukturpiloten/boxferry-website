@@ -560,6 +560,52 @@ class RepositoryPolicyTests(unittest.TestCase):
         checksum_review = rules["Require checksum review for downloaded file-quality tools"]
         self.assertFalse(checksum_review["automerge"])
 
+    def test_lychee_archive_pin_has_one_renovate_owner_and_reviewed_checksums(self) -> None:
+        configuration = json.loads((ROOT / ".github" / "renovate.json").read_text(encoding="utf-8"))
+        installer = (ROOT / "scripts" / "install-file-tools.sh").read_text(encoding="utf-8")
+        managers = [
+            manager
+            for manager in configuration["customManagers"]
+            if "/^scripts/install-file-tools\\.sh$/" in manager.get("managerFilePatterns", [])
+        ]
+        matches = [
+            (manager, match)
+            for manager in managers
+            for pattern in manager["matchStrings"]
+            if (match := re.search(pattern.replace("(?<", "(?P<"), installer))
+            and match.groupdict().get("depName") == "lycheeverse/lychee"
+        ]
+        self.assertEqual(len(matches), 1, "Lychee must have one Renovate extractor")
+        manager, match = matches[0]
+        self.assertEqual(match.group("currentValue"), "0.24.2")
+        self.assertEqual(match.group("datasource"), "github-releases")
+        self.assertIsNotNone(
+            re.fullmatch(
+                manager["extractVersionTemplate"].replace("(?<", "(?P<"),
+                "lychee-v0.24.2",
+            )
+        )
+        self.assertIn(
+            'readonly lychee_checksum="'
+            "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
+            '"',
+            installer,
+        )
+        self.assertIn(
+            'readonly lychee_checksum="'
+            "91a7bd65685da41b90ccb9bc867a3d649a7818042dae04ff405e55a25bddee4c"
+            '"',
+            installer,
+        )
+        checksum_rule_name = "Require checksum review for downloaded file-quality tools"
+        checksum_review = next(
+            rule
+            for rule in configuration["packageRules"]
+            if rule.get("description") == checksum_rule_name
+        )
+        self.assertTrue(checksum_review["dependencyDashboardApproval"])
+        self.assertFalse(checksum_review["automerge"])
+
     def test_deployment_workflow_preserves_static_release_contract(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
         ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
@@ -604,10 +650,18 @@ class RepositoryPolicyTests(unittest.TestCase):
             "name: Format, lint, test, and build",
             "BOXFERRY_WEBSITE_SOURCE_MODE: locked",
             "run: ./scripts/check-all.sh",
+            "name: Validation plan",
+            "path: .validation-base",
+            "python3 .validation-base/scripts/validation-plan.py",
+            "name: Check repository maintenance prose and local links",
+            "bash scripts/check-maintenance-docs.sh",
             "name: PR gate",
             "if: always()",
-            "needs: [quality]",
-            'if [[ "${QUALITY_RESULT}" != "success" ]]; then',
+            "needs: [validation-plan, quality]",
+            "if: needs.validation-plan.outputs.profile == 'full'",
+            "if: needs.validation-plan.outputs.profile == 'maintenance'",
+            '[[ "${PLAN_RESULT}" != success ]]',
+            '[[ "${QUALITY_RESULT}" != success ]]',
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, ci)
@@ -617,9 +671,25 @@ class RepositoryPolicyTests(unittest.TestCase):
             "actions/workflows/deploy.yml/dispatches",
             "inputs[operation]=deploy",
             "gh api --method POST",
+            "pull_request_target:",
         ):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, ci)
+        maintenance_script = (ROOT / "scripts" / "check-maintenance-docs.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("lychee --config lychee.toml --root-dir . --offline", maintenance_script)
+        tool_directory = 'tool_dir="${RUNNER_TEMP}/boxferry-website-tools"'
+        path_export = 'printf \'%s\\n\' "${tool_dir}" >> "${GITHUB_PATH}"'
+        self.assertEqual(ci.count(tool_directory), 2)
+        self.assertEqual(ci.count(path_export), 2)
+        self.assertIn('bash scripts/install-file-tools.sh "${tool_dir}" --lychee-only', ci)
+        self.assertIn('bash scripts/install-file-tools.sh "${tool_dir}"', ci)
+        self.assertIn(tool_directory, workflow)
+        self.assertIn(path_export, workflow)
+        self.assertIn('bash scripts/install-file-tools.sh "${tool_dir}"', workflow)
+        self.assertNotIn("sudo bash scripts/install-file-tools.sh", ci + workflow)
+        self.assertNotIn("cargo install --locked --version 0.24.2 lychee", ci + workflow)
         self.assertNotIn("workflow_run:", workflow)
         self.assertNotIn("${GITHUB_SHA}", workflow)
         self.assertNotIn("set -Eeuo pipefail", workflow)
