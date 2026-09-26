@@ -26,6 +26,13 @@ Navigation and theme entry points are listed in [`docs/customization.md`](docs/c
 Colors live in `content/assets/stylesheets/tokens.css`; logo sources and regeneration remain defined
 in [`docs/brand.md`](docs/brand.md).
 
+To compare validation cost, time the changed-files task on a prose-only edit and the complete gate
+on a full-impact edit in the same environment. Record the revision, selected profile, cold and warm
+wall time, user CPU time, and peak resident memory without deleting shared caches. For a hosted
+pull request, record the start and completion of its validation-plan, quality, and aggregate-gate
+jobs; the first start through the aggregate gate's completion is the critical path. Keep the
+complete main and release validation evidence separate from this contributor-feedback comparison.
+
 ## Deploy to production
 
 Push-triggered CI runs on `main` validate the complete site. Operators explicitly start the
