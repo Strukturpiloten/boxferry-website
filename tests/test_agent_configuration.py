@@ -11,12 +11,17 @@ ROOT = Path(__file__).resolve().parents[1]
 class AgentConfigurationTests(unittest.TestCase):
     def test_primary_and_bounded_defaults(self) -> None:
         config = tomllib.loads((ROOT / ".codex/config.toml").read_text(encoding="utf-8"))
-        self.assertEqual(config["model"], "gpt-6-astra")
+        self.assertEqual(config["model"], "gpt-6-sol")
         self.assertEqual(config["model_reasoning_effort"], "xhigh")
         self.assertTrue(config["agents"]["enabled"])
         self.assertEqual(config["agents"]["max_concurrent_threads_per_session"], 9)
         self.assertEqual(config["agents"]["default_subagent_model"], "gpt-6-sol")
         self.assertEqual(config["agents"]["default_subagent_reasoning_effort"], "medium")
+        development = (ROOT / "docs/development.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "Keep any explicit primary-session override aligned with Sol/xhigh.", development
+        )
+        self.assertNotIn("Astra/xhigh", development)
 
     def test_explicit_roles_and_permissions(self) -> None:
         for role, model, effort, sandbox in (
@@ -63,7 +68,9 @@ class AgentConfigurationTests(unittest.TestCase):
         )
         flattened = " ".join(instructions.split())
         for required in (
-            "The primary manager always uses `gpt-6-astra` with `xhigh` reasoning",
+            "The primary manager always uses `gpt-6-sol` with `xhigh` reasoning",
+            "reserve Astra with `xhigh` reasoning for particularly difficult "
+            "architectural questions",
             "up to nine concurrent subagents plus the primary manager",
             "subject to the session's actual runtime limit",
             "Nine is a ceiling, not a target or nine distinct roles",
