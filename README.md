@@ -28,10 +28,11 @@ in [`docs/brand.md`](docs/brand.md).
 
 ## Deploy to production
 
-Successful push-triggered CI runs on `main` automatically publish their exact revision through the
-protected GitHub `production` environment. The same workflow retains manual `deploy`, `bootstrap`,
-`rollback`, and key-rendering operations. New servers require one administrator preparation and
-one manual `bootstrap` publication. Production keeps five rollback targets.
+Push-triggered CI runs on `main` validate the complete site. Operators explicitly start the
+`Production deployment` workflow on `main` for `deploy`, `bootstrap`, `rollback`, and key-rendering
+operations. It builds the exact revision before entering the protected GitHub `production`
+environment. New servers require one administrator preparation and one manual `bootstrap`
+publication. Production keeps five rollback targets.
 
 Renovate polls the `main` branch of BoxFerry and every Lens repository. It groups changed revision
 pins into one pull request and merges that pull request only after the website checks pass.
@@ -48,4 +49,4 @@ The supported toolchain and repository architecture are documented in
 The site assembles concise BoxFerry, ComposeLens, PodmanLens, and QuadletLens documentation,
 checks published CLI examples, generates stable diagnostic-rule pages, and publishes first-party
 Lens Rust API documentation. The production workflow builds exact locked revisions and
-deploys immutable, rollback-capable static releases to Hetzner automatically or on manual request.
+deploys immutable, rollback-capable static releases to Hetzner on an explicit operator request.
