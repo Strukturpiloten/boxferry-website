@@ -17,12 +17,20 @@
     },
     {
       "customType": "regex",
+      "description": "Signal Lychee releases with a checked Linux archive checksum",
+      "managerFilePatterns": ["/^scripts/install-file-tools\\.sh$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>github-releases) depName=(?<depName>lycheeverse/lychee) releasePrefix=lychee-v\\nreadonly lychee_version=\"(?<currentValue>[^\"]+)\""
+      ],
+      "extractVersionTemplate": "^lychee-v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
       "description": "Update directly pinned workflow tool versions",
       "managerFilePatterns": ["/^\\.github/workflows/.*\\.yml$/"],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)\\n\\s+version: \"(?<currentValue>[^\"]+)\"",
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)\\n\\s+node-version: (?<currentValue>[^\\s]+)",
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)\\n\\s+run: cargo install --locked --version (?<currentValue>[^\\s]+) [^\\s]+"
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)\\n\\s+node-version: (?<currentValue>[^\\s]+)"
       ]
     },
     {

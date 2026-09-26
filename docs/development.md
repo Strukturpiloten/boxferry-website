@@ -18,6 +18,28 @@ quadlet-lens/
 
 ## Complete local validation
 
+For quick feedback on a branch, run `./scripts/check-changes.sh` or the matching VS Code task.
+It checks formatting, Markdown lint, spelling, and offline local links for a small, explicit set of
+repository-maintenance documents when those are the only changes relative to `origin/main`. Pass another trusted base ref
+as the first argument for a stacked branch. Untracked files, renamed or deleted files, site content,
+assets, source pins, workflow files, dependencies, scripts, and uncertain comparisons use the
+complete check. This quick task is development feedback; it does not replace the required complete
+local gate before publishing a PR.
+
+On GitHub, a pull request uses its trusted base revision to choose the same maintenance profile.
+The stable `Format, lint, test, and build` check runs the selected validation steps, and the `PR gate`
+requires the plan and check to succeed. A policy
+change itself runs full validation. Main branch pushes and manually dispatched CI always run the
+complete locked-source check. The production deployment workflow still builds and validates the
+exact selected revision before accessing the protected environment. The website's Markdown under
+`content/` is site input and always requires full validation.
+
+The maintenance job downloads only a checksum-verified Lychee binary into its runner temporary
+directory instead of compiling it with Cargo. A local warm run with an already installed Lychee
+took about 2.4 seconds; this does not include GitHub runner startup or a cold archive download.
+One isolated unprivileged download and install took 0.8 seconds on the development host. Hosted
+timing remains to be measured.
+
 Run the same complete task required before a pull request:
 
 ```console
