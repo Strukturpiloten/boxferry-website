@@ -50,6 +50,8 @@ deployment, verification, key rotation, and rollback.
 
 The supported toolchain and repository architecture are documented in
 [`docs/development.md`](docs/development.md) and [`docs/architecture.md`](docs/architecture.md).
+AI-readable documentation routes and optional consumer registration are described in
+[`docs/ai-documentation.md`](docs/ai-documentation.md).
 
 ## Status
 

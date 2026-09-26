@@ -293,6 +293,18 @@ class SiteVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(SiteVerificationError, "forbidden path fragment"):
             verify_site(self.site)
 
+    def test_oversized_markdown_only_disclosure_fails_without_full_corpus(self) -> None:
+        # A large authored corpus omits llms-full.txt; its individual Markdown
+        # alternatives still need the same privacy boundary as rendered HTML.
+        self.assertFalse((self.site / "llms-full.txt").exists())
+        alternative = self.site / "docs" / "index.md"
+        alternative.write_text(
+            "# Documentation\n\n" + "safe text " * 240_000 + "\n<!-- /home/private/source -->\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(SiteVerificationError, "forbidden path fragment"):
+            verify_site(self.site)
+
     def test_invalid_source_metadata_fails(self) -> None:
         metadata = self.site / "assets" / "data" / "documentation-sources.json"
         metadata.write_text("{}", encoding="utf-8")
