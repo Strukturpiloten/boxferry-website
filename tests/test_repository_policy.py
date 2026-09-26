@@ -747,6 +747,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             "assemble_docs.py",
             "zensical build",
             "build_rustdoc.py",
+            "publish_ai_docs.py",
             "prepare_deployment.py",
             "verify_site.py",
             '[[ -f "${markdown_file}" ]]',

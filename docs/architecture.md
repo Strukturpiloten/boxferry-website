@@ -30,6 +30,11 @@ Generated Rustdoc remains ignored and is never copied back into a Lens repositor
 the exact website revision in private and public deployment metadata. These generated files travel
 with the same immutable artifact as every HTML, JavaScript, CSS, image, search, and Rustdoc file.
 
+After rendering, `scripts/publish_ai_docs.py` derives compact LLM indexes and stable Markdown
+alternatives from the same assembled, authored source tree. It adds HTML discovery links and
+checks those routes against the exact staged pages before publication; Rustdoc HTML is excluded.
+See [`ai-documentation.md`](ai-documentation.md) for route and size policy.
+
 The brand build is deliberately smaller than the documentation assembler. Monochrome SVG originals
 and the design-token stylesheet are versioned sources. `scripts/generate_brand_assets.py` derives
 the committed dark, light, favicon, and social-preview variants and fails in check mode when any

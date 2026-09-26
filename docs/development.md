@@ -48,7 +48,8 @@ Run the same complete task required before a pull request:
 
 The task formats owned files, checks spelling, validates every supported file type, runs Python
 tests, regenerates token-derived brand assets, assembles the documentation, performs a strict
-Zensical build, generates first-party Lens Rustdoc, checks required public routes and assets, and
+Zensical build, generates first-party Lens Rustdoc and authored Markdown alternatives, checks
+required public routes and assets, and
 prepares the Apache deployment artifact, validates its privacy and server-policy boundaries, and
 checks local links without contacting external web servers.
 
@@ -92,6 +93,7 @@ uv sync --locked
 uv run --frozen python scripts/assemble_docs.py --source-mode locked
 uv run --frozen zensical build --strict
 uv run --frozen python scripts/build_rustdoc.py --source-mode locked
+uv run --frozen python scripts/publish_ai_docs.py
 uv run --frozen python scripts/prepare_deployment.py
 ```
 

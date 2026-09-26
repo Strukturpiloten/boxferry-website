@@ -347,6 +347,7 @@ def verify_site(site_directory: Path) -> None:
             ".html",
             ".js",
             ".json",
+            ".md",
             ".svg",
             ".txt",
         }:
@@ -366,7 +367,12 @@ def main() -> int:
     arguments = parser.parse_args()
     try:
         verify_site(arguments.site_directory)
-    except SiteVerificationError as error:
+        from assemble_docs import AssemblyError, load_manifest
+        from publish_ai_docs import AiDocsError, publish
+
+        manifest = load_manifest(ROOT / "documentation-sources.toml")
+        publish(manifest.staging_directory, arguments.site_directory, manifest, check=True)
+    except (SiteVerificationError, AssemblyError, AiDocsError, OSError) as error:
         print(f"boxferry-website: site verification failed: {error}", file=sys.stderr)
         return 1
     print("BoxFerry static site routes and privacy boundaries are valid.")
