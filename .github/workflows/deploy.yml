@@ -17,7 +17,7 @@ on:
           - deploy
           - rollback
       revision:
-        description: Exact revision supplied by CI or required by rollback
+        description: Optional exact revision; required for rollback
         type: string
         required: false
         default: ""

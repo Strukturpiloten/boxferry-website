@@ -598,15 +598,28 @@ class RepositoryPolicyTests(unittest.TestCase):
             with self.subTest(expected=expected):
                 self.assertIn(expected, workflow)
         for expected in (
-            "github.event_name == 'push' && github.ref == 'refs/heads/main'",
-            "needs: [pr-gate]",
-            "actions: write",
-            "actions/workflows/deploy.yml/dispatches",
-            "inputs[operation]=deploy",
-            "inputs[revision]=${GITHUB_SHA}",
+            "  push:",
+            "    branches:\n      - main",
+            "  pull_request:",
+            "name: Format, lint, test, and build",
+            "BOXFERRY_WEBSITE_SOURCE_MODE: locked",
+            "run: ./scripts/check-all.sh",
+            "name: PR gate",
+            "if: always()",
+            "needs: [quality]",
+            'if [[ "${QUALITY_RESULT}" != "success" ]]; then',
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, ci)
+        for forbidden in (
+            "  production:",
+            "actions: write",
+            "actions/workflows/deploy.yml/dispatches",
+            "inputs[operation]=deploy",
+            "gh api --method POST",
+        ):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, ci)
         self.assertNotIn("workflow_run:", workflow)
         self.assertNotIn("${GITHUB_SHA}", workflow)
         self.assertNotIn("set -Eeuo pipefail", workflow)

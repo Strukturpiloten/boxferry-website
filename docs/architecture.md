@@ -63,9 +63,10 @@ last. The updater permits one server-enforced bootstrap only while no releases e
 first `current` link to be created before Hetzner can serve that path. Every later activation runs
 HTTPS and Apache policy checks before finalization; failures restore the saved link state.
 
-A successful push-triggered `CI` run on `main` starts publication for that run's exact commit.
-Failed, pull-request, and manually dispatched CI runs do not publish. Operators can still request
-manual deployment, bootstrap, key rendering, or rollback from `main`.
+Push-triggered `CI` runs on `main` validate the complete locked site but do not publish it.
+An operator explicitly starts `Production deployment` on `main` to request deployment, bootstrap,
+key rendering, or rollback. The deployment workflow validates and builds the selected exact revision
+before using the protected `production` environment.
 
 The deployment contract and administrator procedure are defined in [`deployment.md`](deployment.md)
 and [decision 0003](decisions/0003-hetzner-atomic-static-deployment.md).

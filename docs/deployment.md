@@ -3,9 +3,9 @@
 BoxFerry publishes a static Zensical site to Hetzner. GitHub Actions builds every release; the
 server only stores and serves generated HTML, JavaScript, CSS, images, JSON, text, and Rustdoc.
 
-After bootstrap, a successful push-triggered `CI` run on `main` automatically publishes its exact
-commit. Pull-request, failed, and manually dispatched CI runs never publish. Operators can also run
-the protected `Production deployment` workflow manually.
+Push-triggered `CI` runs on `main` validate the complete site but do not publish it. After bootstrap,
+an operator starts the protected `Production deployment` workflow on `main` to publish an exact
+revision. Pull-request and manually dispatched CI runs also do not publish.
 
 ## Choose the right operation
 
@@ -53,11 +53,11 @@ In the repository, open **Settings → Environments → New environment** and cr
 Configure the environment to:
 
 1. allow deployments only from `main`;
-2. omit required reviewers for unattended publication;
+2. choose whether each manually requested publication also needs a required reviewer;
 3. prevent administrators from bypassing the protection if that matches the project policy.
 
-Adding a required reviewer is supported, but every automatic publication then waits for that
-reviewer's approval.
+Starting `Production deployment` is always an explicit operator action. If a required reviewer is
+configured, the deployment also waits for that reviewer's approval.
 
 Create these environment variables, not repository-level variables. Copy the current value from the
 corresponding local shell variable:
@@ -239,21 +239,21 @@ For ordinary website changes:
 1. rerun `prepare-hetzner-server.sh` before merging if the tracked updater changed;
 2. merge the website changes into `main`;
 3. wait for push-triggered `CI` to pass;
-4. check the automatic production job summary.
+4. run **Production deployment** on `main` with `deploy`, then check its job summary.
 
 The workflow builds exact locked documentation revisions without production secrets, uploads the
 complete artifact to `incoming/`, activates the SHA-named release, verifies the public server, and
 then finalizes retention. A verification failure restores the complete previous link state.
 
-To redeploy the current `main` revision, run **Production deployment** manually with `deploy`. The
-manual path builds, verifies, and publishes through the same jobs.
+To redeploy the current `main` revision, run **Production deployment** again with `deploy`. Each
+deployment builds, verifies, and publishes through the same jobs.
 
 ## Documentation source updates
 
 Renovate polls the `main` branch of BoxFerry, ComposeLens, PodmanLens, and QuadletLens. When a source
 commit changes, Renovate groups the exact revision pins into one pull request. Required website
-checks must pass before platform auto-merge. The resulting `main` CI run then publishes the updated
-site.
+checks must pass before platform auto-merge. The resulting `main` CI run validates the updated
+site. An operator then runs **Production deployment** on `main` with `deploy` to publish it.
 
 Enable Renovate and **Allow auto-merge** in the website repository. No Lens workflow, webhook, or
 cross-repository token is required.
