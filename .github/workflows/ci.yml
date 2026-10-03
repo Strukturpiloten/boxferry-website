@@ -82,7 +82,7 @@ jobs:
         with:
           enable-cache: true
           # renovate: datasource=github-releases depName=astral-sh/uv
-          version: "0.12.20"
+          version: "0.12.21"
       - name: Install checksum-pinned native file-quality tools
         if: needs.validation-plan.outputs.profile == 'full'
         run: |
