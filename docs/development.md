@@ -85,7 +85,7 @@ website revision pin.
 
 ## Clean checkout
 
-With Node.js 22 or newer and uv 0.12.5 installed:
+With Node.js 22 or newer and the exact uv version declared in `pyproject.toml` installed:
 
 ```console
 npm ci --ignore-scripts

@@ -3,7 +3,7 @@ title: Privacy Policy
 description: How personal data is processed when visiting the BoxFerry website
 ---
 
-Last updated: 19 August 2026
+Last updated: 6 October 2026
 
 This policy explains how personal data is processed when you visit `boxferry.dev`. It is designed
 for this static website and does not describe unrelated processing on external websites.
@@ -21,8 +21,8 @@ The controller under the General Data Protection Regulation (GDPR) is:
 
 Represented by its partners: Frauke Beckert and Martin Beckert.
 
-- **Email:** [hallo@strukturpiloten.de](mailto:hallo@strukturpiloten.de)
-- **Telephone:** [+49 173 4816832](tel:+491734816832)
+- **Email:** [martin.beckert@strukturpiloten.de](mailto:martin.beckert@strukturpiloten.de)
+- **Telephone:** [+49 1520 777 1337](tel:+4915207771337)
 
 ## Hosting and server logs
 
@@ -42,18 +42,22 @@ protect the service. A log entry can contain:
 
 We process these data to deliver the website, maintain availability, diagnose technical failures,
 and detect or investigate abuse. The legal basis is our legitimate interest in providing a secure
-and reliable public website under Article 6(1)(f) GDPR. Routine server logs are retained for no
-longer than 14 days. Relevant entries may be retained for longer when a specific security incident
-must be investigated or legal claims must be established, exercised, or defended.
+and reliable public website under Article 6(1)(f) GDPR.
+
+Routine Apache log deletion follows the retention setting in the hosting account.
+[Hetzner documents a default of seven days for Apache access and error logs](https://docs.hetzner.com/general/company-and-policy/data-protection-at-hetzner/);
+this setting can be changed in konsoleH. Hetzner separately documents encrypted backups retained
+for 14 days. These provider defaults do not establish the current setting of an individual
+hosting account. Entries needed for a specific security incident or legal claim may be retained
+until the investigation or claim is concluded and any applicable retention obligation has ended.
 
 ## Browser storage, cookies, and search
 
 The website does not set cookies and does not use analytics, advertising, profiling, fingerprinting,
 or cross-site tracking.
 
-The site stores functional display preferences, such as the selected color scheme and selected
-documentation tabs, in local storage in your browser. These values remain on your device, are not
-sent to us, and can be removed through your browser settings. This access is strictly necessary to
+The site stores your selected color scheme in local storage in your browser. This value remains
+on your device, is not sent to us, and can be removed through your browser settings. This access is strictly necessary to
 provide the preference requested by the visitor and therefore does not require consent under
 Section 25(2)(2) of the German Telecommunications Digital Services Data Protection Act (TDDDG).
 

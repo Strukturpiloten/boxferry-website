@@ -25,13 +25,13 @@ Represented by its partners: Frauke Beckert and Martin Beckert.
 
 ## Contact
 
-- **Email:** [hallo@strukturpiloten.de](mailto:hallo@strukturpiloten.de)
-- **Telephone:** [+49 173 4816832](tel:+491734816832)
+- **Email:** [martin.beckert@strukturpiloten.de](mailto:martin.beckert@strukturpiloten.de)
+- **Telephone:** [+49 1520 777 1337](tel:+4915207771337)
 
-## Editorial responsibility
+## Content responsibility
 
-Frauke Beckert is responsible for editorial content under Section 18(2) of the German State Media
-Treaty (`Medienstaatsvertrag`, MStV), at the provider address above.
+Martin Beckert is responsible for the website content and can be contacted at the provider address
+above.
 
 ## Consumer dispute resolution
 

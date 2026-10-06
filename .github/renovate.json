@@ -54,6 +54,12 @@
   ],
   "packageRules": [
     {
+      "description": "Keep the required uv CLI and workflow versions together",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["astral-sh/uv"],
+      "groupName": "uv toolchain"
+    },
+    {
       "description": "Group repository Node development-tool updates",
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
