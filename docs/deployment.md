@@ -22,6 +22,10 @@ preparation uses an unrestricted administrator identity. Workflow operations use
 
 ## Before the first publication
 
+Before publishing legal-page changes, complete the account-specific checks in
+[legal-page maintenance](legal-maintenance.md). A passing build or merged PR does not verify
+hosting settings, contracts or legal compliance.
+
 You need:
 
 - administrator access to the BoxFerry website repository;

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import re
 import subprocess
+import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.generate_brand_assets import GENERATED_ASSET_PATHS
 
@@ -43,6 +46,32 @@ def exact_node_pins(dependencies: dict[str, str]) -> dict[str, str]:
         if EXACT_NODE_PIN_PATTERN.fullmatch(version) is None:
             raise ValueError(f"Node development dependency is not exactly pinned: {name}@{version}")
     return dependencies
+
+
+def extracted_uv_versions(configuration: dict, sources: dict[str, str]) -> dict[str, str]:
+    """Check actual Renovate extraction, not just the presence of annotation text."""
+    versions = {}
+    for path, source in sources.items():
+        matches = []
+        for manager in configuration["customManagers"]:
+            if manager["customType"] != "regex" or not any(
+                re.search(pattern[1:-1], path) for pattern in manager["managerFilePatterns"]
+            ):
+                continue
+            for pattern in manager["matchStrings"]:
+                converted = re.sub(r"\(\?<([A-Za-z][A-Za-z0-9_]*)>", r"(?P<\1>", pattern)
+                for match in re.finditer(converted, source):
+                    fields = match.groupdict()
+                    datasource = fields.get("datasource", manager.get("datasourceTemplate"))
+                    name = fields.get("depName", manager.get("depNameTemplate"))
+                    if (datasource, name) == ("github-releases", "astral-sh/uv"):
+                        matches.append(fields["currentValue"])
+        if len(matches) != 1:
+            raise ValueError("each uv version needs exactly one Renovate owner")
+        versions[path] = matches[0]
+    if len(set(versions.values())) != 1:
+        raise ValueError("required and workflow uv versions must agree")
+    return versions
 
 
 class RepositoryPolicyTests(unittest.TestCase):
@@ -363,7 +392,9 @@ class RepositoryPolicyTests(unittest.TestCase):
             "Privacy Policy",
             "Hetzner Online GmbH",
             "Article 6(1)(f) GDPR",
-            "14 days",
+            "retention setting in the hosting account",
+            "seven days for Apache access and error logs",
+            "encrypted backups",
             "does not set cookies",
             "local storage",
             "Section 25(2)(2)",
@@ -371,6 +402,35 @@ class RepositoryPolicyTests(unittest.TestCase):
         ):
             with self.subTest(document="privacy policy", expected=expected):
                 self.assertIn(expected, privacy_policy)
+
+    def test_legal_contacts_and_content_responsibility_are_consistent(self) -> None:
+        pages = {
+            name: (ROOT / "content" / name / "index.md").read_text(encoding="utf-8")
+            for name in ("legal-notice", "privacy-policy")
+        }
+        for name, page in pages.items():
+            with self.subTest(page=name):
+                self.assertIn("Strukturpiloten OHG", page)
+                self.assertIn(
+                    "Represented by its partners: Frauke Beckert and Martin Beckert.", page
+                )
+                self.assertIn(
+                    "[martin.beckert@strukturpiloten.de](mailto:martin.beckert@strukturpiloten.de)",
+                    page,
+                )
+                self.assertIn("[+49 1520 777 1337](tel:+4915207771337)", page)
+                self.assertNotIn("hallo@strukturpiloten.de", page)
+                self.assertNotIn("4816832", page)
+        self.assertIn(
+            "Martin Beckert is responsible for the website content", pages["legal-notice"]
+        )
+        self.assertNotIn("Section 18(2)", pages["legal-notice"])
+        self.assertNotIn("documentation tabs", pages["privacy-policy"])
+        self.assertNotIn("longer than 14 days", pages["privacy-policy"])
+        self.assertIn(
+            "These provider defaults do not establish the current setting", pages["privacy-policy"]
+        )
+        self.assertIn("Last updated: 6 October 2026", pages["privacy-policy"])
 
     def test_custom_company_icon_is_local_monochrome_and_passive(self) -> None:
         icon = ROOT / "overrides" / ".icons" / "strukturpiloten" / "rocket.svg"
@@ -413,6 +473,53 @@ class RepositoryPolicyTests(unittest.TestCase):
 
         required_uv = configuration["tool"]["uv"]["required-version"]
         self.assertRegex(required_uv, r"\A==[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?\Z")
+
+    def test_required_and_workflow_uv_pins_have_unique_aligned_renovate_ownership(self) -> None:
+        configuration = json.loads((ROOT / ".github/renovate.json").read_text(encoding="utf-8"))
+        sources = {
+            path: (ROOT / path).read_text(encoding="utf-8")
+            for path in (
+                "pyproject.toml",
+                ".github/workflows/ci.yml",
+                ".github/workflows/deploy.yml",
+            )
+        }
+        expected = tomllib.loads(sources["pyproject.toml"])["tool"]["uv"]["required-version"]
+        versions = extracted_uv_versions(configuration, sources)
+        self.assertEqual(versions, dict.fromkeys(sources, expected.removeprefix("==")))
+        for path in sources:
+            with self.subTest(path=path):
+                changed = dict(sources)
+                changed[path] = changed[path].replace(expected.removeprefix("=="), "99.1.2", 1)
+                with self.assertRaises(ValueError):
+                    extracted_uv_versions(configuration, changed)
+        for description in (
+            "Update the required uv CLI version",
+            "Update directly pinned workflow tool versions",
+        ):
+            owner = next(
+                manager
+                for manager in configuration["customManagers"]
+                if manager["description"] == description
+            )
+            duplicated = copy.deepcopy(configuration)
+            duplicated["customManagers"].append(copy.deepcopy(owner))
+            with self.assertRaises(ValueError):
+                extracted_uv_versions(duplicated, sources)
+            missing = copy.deepcopy(configuration)
+            missing["customManagers"].remove(owner)
+            with self.assertRaises(ValueError):
+                extracted_uv_versions(missing, sources)
+        groups = [
+            rule
+            for rule in configuration["packageRules"]
+            if rule.get("description") == "Keep the required uv CLI and workflow versions together"
+        ]
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0]["matchDatasources"], ["github-releases"])
+        self.assertEqual(groups[0]["matchPackageNames"], ["astral-sh/uv"])
+        self.assertNotIn("minimumReleaseAge", groups[0])
+        self.assertEqual(configuration["minimumReleaseAge"], "3 days")
 
     def test_python_pin_parser_rejects_non_exact_and_duplicate_dependencies(self) -> None:
         invalid_dependency_sets = (
@@ -765,7 +872,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             for path in documents
             if not any(
                 part in {".generated", ".venv", "node_modules", "site", "temp"}
-                for part in path.parts
+                for part in path.relative_to(ROOT).parts
             )
         ]
         self.assertTrue(documents)
@@ -773,6 +880,38 @@ class RepositoryPolicyTests(unittest.TestCase):
             with self.subTest(document=document.relative_to(ROOT)):
                 first_line = document.read_text(encoding="utf-8").splitlines()[0]
                 self.assertEqual(first_line, "---")
+
+    def test_yaml_policy_covers_checkout_below_generated_ancestor(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / ".generated" / "worktrees" / "repository"
+            root.mkdir(parents=True)
+            owned_documents = (root / "owned.yaml", root / "config" / "owned.yml")
+            for document in owned_documents:
+                document.parent.mkdir(parents=True, exist_ok=True)
+                document.write_text("---\nvalue: owned\n", encoding="utf-8")
+            for excluded in (".generated", ".venv", "node_modules", "site", "temp"):
+                directory = root / "nested" / excluded
+                directory.mkdir(parents=True)
+                for suffix in ("yaml", "yml"):
+                    (directory / f"excluded.{suffix}").write_text(
+                        "missing marker\n", encoding="utf-8"
+                    )
+
+            policy = RepositoryPolicyTests(
+                "test_complete_yaml_documents_use_explicit_start_markers"
+            )
+            with patch(f"{__name__}.ROOT", root):
+                policy.test_complete_yaml_documents_use_explicit_start_markers()
+                for document in owned_documents:
+                    with self.subTest(document=document.relative_to(root)):
+                        document.write_text("missing marker\n---\n", encoding="utf-8")
+                        with self.assertRaises(AssertionError):
+                            policy.test_complete_yaml_documents_use_explicit_start_markers()
+                        document.write_text("---\nvalue: owned\n", encoding="utf-8")
+                for document in owned_documents:
+                    document.unlink()
+                with self.assertRaises(AssertionError):
+                    policy.test_complete_yaml_documents_use_explicit_start_markers()
 
 
 if __name__ == "__main__":
