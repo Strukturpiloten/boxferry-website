@@ -7,7 +7,7 @@ staging-directory = ".generated/docs"
 [[repositories]]
 name = "boxferry"
 repository = "https://github.com/Strukturpiloten/boxferry.git"
-revision = "5c459fd3813ed7114f9790fcb20f5bce62cf43c6"
+revision = "8911ce4333340ba59e3ce461b7d8620161cea846"
 local-directories = ["../boxferry", "../.."]
 
 [[repositories.documents]]
@@ -56,7 +56,7 @@ destination = "docs/api/compose-lens"
 [[repositories]]
 name = "podman-lens"
 repository = "https://github.com/Strukturpiloten/podman-lens.git"
-revision = "e4f2d1326e780d86c3e0cd1394045545f732a8d3"
+revision = "c9895868cbffc374ecea9c04d4384050b945bdbf"
 local-directories = ["../podman-lens"]
 
 [[repositories.documents]]
