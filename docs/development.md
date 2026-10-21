@@ -27,7 +27,7 @@ complete check. This quick task is development feedback; it does not replace the
 local gate before publishing a PR.
 
 On GitHub, a pull request uses its trusted base revision to choose the same maintenance profile.
-The stable `Format, lint, test, and build` check runs the selected validation steps, and the `PR gate`
+The stable `Format, lint, test, and build` check runs the selected validation steps, and `Required CI`
 requires the plan and check to succeed. A policy
 change itself runs full validation. Main branch pushes and manually dispatched CI always run the
 complete locked-source check. The production deployment workflow still builds and validates the

@@ -108,7 +108,7 @@ jobs:
         run: bash scripts/check-maintenance-docs.sh
 
   pr-gate:
-    name: PR gate
+    name: Required CI
     if: always()
     needs: [validation-plan, quality]
     runs-on: ubuntu-24.04

@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import tempfile
+import textwrap
 import tomllib
 import unittest
 from pathlib import Path
@@ -762,7 +763,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             "python3 .validation-base/scripts/validation-plan.py",
             "name: Check repository maintenance prose and local links",
             "bash scripts/check-maintenance-docs.sh",
-            "name: PR gate",
+            "name: Required CI",
             "if: always()",
             "needs: [validation-plan, quality]",
             "if: needs.validation-plan.outputs.profile == 'full'",
@@ -800,6 +801,63 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertNotIn("workflow_run:", workflow)
         self.assertNotIn("${GITHUB_SHA}", workflow)
         self.assertNotIn("set -Eeuo pipefail", workflow)
+
+    def test_required_ci_is_the_unique_always_running_validation_aggregate(self) -> None:
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        gate = workflow.split("\n  pr-gate:\n", 1)[1]
+        gate = re.split(r"\n  [\w-]+:\n", gate, maxsplit=1)[0]
+        self.assertIn("    name: Required CI\n", gate)
+        self.assertIn("    if: always()\n", gate)
+        self.assertIn("    needs: [validation-plan, quality]\n", gate)
+        self.assertNotIn("continue-on-error:", gate)
+        self.assertNotIn("        if:", gate)
+        for expected in (
+            "PLAN_RESULT: ${{ needs.validation-plan.result }}",
+            "PROFILE: ${{ needs.validation-plan.outputs.profile }}",
+            "QUALITY_RESULT: ${{ needs.quality.result }}",
+        ):
+            self.assertIn(expected, gate)
+        matching_jobs = [
+            (path.name, match.group(1))
+            for path in (ROOT / ".github/workflows").glob("*.yml")
+            for match in re.finditer(
+                r"^  ([\w-]+):\n(?:(?!^  [\w-]+:).)*?^    name: Required CI$",
+                path.read_text(encoding="utf-8"),
+                flags=re.MULTILINE | re.DOTALL,
+            )
+        ]
+        self.assertEqual(matching_jobs, [("ci.yml", "pr-gate")])
+
+    def test_required_ci_rejects_incomplete_or_unplanned_validation(self) -> None:
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        gate = workflow.split("\n  pr-gate:\n", 1)[1]
+        gate = re.split(r"\n  [\w-]+:\n", gate, maxsplit=1)[0]
+        scripts = re.findall(r"^        run: \|\n((?:          .*\n|\n)+)", gate, re.MULTILINE)
+        self.assertEqual(len(scripts), 1)
+        script = textwrap.dedent(scripts[0])
+        cases = [("success", profile, "success", True) for profile in ("full", "maintenance")]
+        for result in ("failure", "cancelled", "skipped", "", "unknown"):
+            for profile in ("full", "maintenance"):
+                cases.extend(
+                    ((result, profile, "success", False), ("success", profile, result, False))
+                )
+        cases.extend(("success", profile, "success", False) for profile in ("", "unknown"))
+        with tempfile.TemporaryDirectory() as temporary:
+            for plan_result, profile, quality_result, expected_success in cases:
+                with self.subTest(plan=plan_result, profile=profile, quality=quality_result):
+                    result = subprocess.run(
+                        ["bash", "--noprofile", "--norc", "-c", script],
+                        env={
+                            "PLAN_RESULT": plan_result,
+                            "PROFILE": profile,
+                            "QUALITY_RESULT": quality_result,
+                            "GITHUB_STEP_SUMMARY": str(Path(temporary) / "summary.md"),
+                        },
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode == 0, expected_success, result.stderr)
 
     def test_literal_colors_are_centralized(self) -> None:
         token_file = ROOT / "content" / "assets" / "stylesheets" / "tokens.css"
