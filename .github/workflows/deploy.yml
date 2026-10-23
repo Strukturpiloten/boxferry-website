@@ -32,7 +32,7 @@ concurrency:
 jobs:
   request:
     name: Validate production request
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 3
     outputs:
       operation: ${{ steps.normalize.outputs.operation }}
@@ -87,7 +87,7 @@ jobs:
     name: Show restricted SSH key entries
     if: needs.request.outputs.operation == 'show-authorized-keys'
     needs: [request]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     environment:
       name: production
@@ -111,7 +111,7 @@ jobs:
       needs.request.outputs.operation == 'deploy' ||
       needs.request.outputs.operation == 'bootstrap'
     needs: [request]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 25
     steps:
       - name: Check out repository
@@ -158,7 +158,7 @@ jobs:
       needs.request.outputs.operation == 'deploy' ||
       needs.request.outputs.operation == 'bootstrap'
     needs: [request, build]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     environment:
       name: production
@@ -302,7 +302,7 @@ jobs:
     name: Promote retained Hetzner release
     if: needs.request.outputs.operation == 'rollback'
     needs: [request]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     environment:
       name: production

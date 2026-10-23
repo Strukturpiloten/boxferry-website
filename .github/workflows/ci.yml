@@ -18,7 +18,7 @@ concurrency:
 jobs:
   validation-plan:
     name: Validation plan
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       profile: ${{ steps.plan.outputs.profile }}
@@ -62,7 +62,7 @@ jobs:
   quality:
     name: Format, lint, test, and build
     needs: validation-plan
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - name: Check out repository
@@ -111,7 +111,7 @@ jobs:
     name: Required CI
     if: always()
     needs: [validation-plan, quality]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Require the planned validation job to succeed
         shell: bash
