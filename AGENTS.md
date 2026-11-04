@@ -162,16 +162,21 @@ either result. Neither mode grants release, publication, or deployment authority
 
 ## Cross-repository workflow version policy
 
-- Keep equivalent local development tasks, GitHub PR, main, and release workflow definitions aligned across BoxFerry, ComposeLens, PodmanLens, QuadletLens, DockerLens, and the website where responsibilities match. Before a change, identify the canonical definition and every affected consumer; coordinate updates and document justified repository-specific differences.
-- Reuse common scripts, actions, and workflows without making Lens product libraries depend on BoxFerry. Preserve native conformance, least privilege, exact-candidate evidence, resource budgets, and cleanup. One repository passing does not establish that a shared rollout is complete.
-- Every added or changed software dependency or operational tool/runtime pin needs an explicit version and immutable integrity information where the ecosystem supports it:
-  - Container images: readable version tag plus immutable digest.
-  - GitHub Actions and reusable workflows: full commit SHA plus exact release-tag comment.
-  - Downloaded tools: version plus verified checksum for the selected artifact.
-  - Package dependencies: policy-compliant version declarations, lock files, and integrity records.
-    Document justified exceptions when integrity metadata is unavailable; never invent a checksum, replace a reviewed pin with a floating reference, or weaken existing admission controls.
-- Whenever a pin or definition is added, changed, moved, or removed, review Renovate in the same change: canonical ownership, manager paths, extraction, grouping, approvals, and regression coverage. Update configuration and affected consumers together. If no configuration edit is needed, record verified extraction evidence and the reason in the issue or PR. Avoid duplicate managers for the same operational pin; keep historical evidence and intentional fixtures outside automatic update streams.
-- These rules do not change current validation gates or grant release, publication, deployment, or out-of-workspace authority. Agent model choices remain maintainer-owned routing policy, not automatically updated software dependencies.
+The shared mechanics and rollout contract live in BoxFerry's
+[automation guide](https://github.com/Strukturpiloten/boxferry/blob/main/docs/automation.md) and
+[dependency policy](https://github.com/Strukturpiloten/boxferry/blob/main/docs/dependency-policy.md).
+Bind the manifest, shared workflows and common Renovate preset to one reviewed immutable revision.
+Keep website source locks, strict builds, privacy, budgets, cleanup and protected deployment here.
+One repository passing does not establish rollout completion.
+
+Every changed software pin needs real integrity evidence and one Renovate owner. Keep external
+Actions at full SHAs with exact release-tag comments; the infrastructure-only bootstrap exception
+is recorded in ADR 0005. Review affected consumers, grouping, approvals and regression evidence
+in the same change. Preserve historical evidence and intentional fixtures. Never weaken an
+integrity or compatibility gate to make automatic updates pass.
+
+These rules grant no release, publication, deployment or out-of-workspace authority. Agent models
+remain maintainer-owned routing policy, not automatically updated software dependencies.
 
 ## Code discovery
 

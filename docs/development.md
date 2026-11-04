@@ -18,19 +18,24 @@ quadlet-lens/
 
 ## Complete local validation
 
-For quick feedback on a branch, run `./scripts/check-changes.sh` or the matching VS Code task.
-It checks formatting, Markdown lint, spelling, and offline local links for a small, explicit set of
-repository-maintenance documents when those are the only changes relative to `origin/main`. Pass another trusted base ref
-as the first argument for a stacked branch. Untracked files, renamed or deleted files, site content,
-assets, source pins, workflow files, dependencies, scripts, and uncertain comparisons use the
-complete check. This quick task is development feedback; it does not replace the required complete
-local gate before publishing a PR.
+For change-aware feedback, run `./scripts/check-changes.sh` or the matching VS Code task. It
+uses the immutable shared launcher and `scripts/validation-policy.json`. Known maintenance prose
+gets formatting, spelling and offline links. Website-owned public Markdown gets those checks,
+safe documentation assembly, a clean strict Zensical build and authored Markdown-route checks.
+The public-prose task does not build Rust API artifacts. Mixed source/configuration changes and
+unknown or unsafe comparisons run the complete gate. Pass another trusted base ref as the first
+argument for a stacked branch.
 
-During initial bootstrap, pull requests, merge queues, main and manual CI all run the complete
-locked site gate. The manifest, trusted service and conservative shared policy exist before a
-later stage enables shared selection and admission. Complete validation and preview enter the
-verified launcher for canonical uv; existing site dependencies remain locked here. Preview has
-a two-hour watchdog. Local quick feedback still does not replace the complete gate.
+Pull requests and merge queues use policy from their exact trusted base. The stable `Required CI`
+check independently verifies the plan and selected job outcomes. Main pushes and manually
+dispatched CI always run the complete locked-source check. The complete gate remains mandatory
+before PR publication; targeted feedback does not replace it.
+
+`.github/automation.json`, shared workflow references and the common Renovate preset select one
+immutable BoxFerry automation revision. Adoption first installs the complete-only manifest, policy
+and trusted service. A subsequent change enables shared planning and admission. Rollback restores
+the previous reviewed revision in all three locations. The production workflow still validates
+the exact selected revision before entering its protected environment.
 
 Run the same complete task required before a pull request:
 
@@ -59,6 +64,8 @@ Start a local preview after assembling content from the sibling repositories:
 Open `http://localhost:8000/`. The preview is a complete static build, including the generated Lens
 Rust API pages.
 
+The shared preview task has a two-hour watchdog; restart it when needed.
+
 The temporary documentation plan under `temp/` is deliberately excluded from Git and from the
 public build.
 
@@ -77,7 +84,8 @@ website revision pin.
 
 ## Clean checkout
 
-With Node.js 22 or newer, Git and Python installed:
+With Node.js 22 or newer, Git and Python installed, the verified launcher supplies canonical
+uv, Ruff and ty. For the complete build:
 
 ```console
 ./scripts/check-all.sh --check

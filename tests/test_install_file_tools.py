@@ -1,56 +1,62 @@
-"""Integrity failures stop the bounded Lychee installer before publication."""
+"""Keep website installer selection thin and preserve shared failure outcomes."""
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
-INSTALLER = Path(__file__).resolve().parents[1] / "scripts" / "install-file-tools.sh"
+INSTALLER = Path(__file__).resolve().parents[1] / "scripts/install-file-tools.sh"
 
 
 class FileToolInstallTests(unittest.TestCase):
-    def test_corrupt_lychee_archive_is_rejected_before_install(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            fake_bin = root / "fake-bin"
-            fake_bin.mkdir()
-            fake_curl = fake_bin / "curl"
-            fake_curl.write_text(
-                "#!/bin/sh\n"
-                'while [ "$#" -gt 0 ]; do\n'
-                '  if [ "$1" = --output ]; then shift; printf corrupt > "$1"; exit 0; fi\n'
-                "  shift\n"
-                "done\n"
-                "exit 1\n",
-                encoding="utf-8",
-            )
-            fake_curl.chmod(0o755)
-            environment = os.environ.copy()
-            environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
-            destination = root / "installed"
-            result = subprocess.run(
-                ["bash", str(INSTALLER), str(destination), "--lychee-only"],
-                env=environment,
-                capture_output=True,
-                check=False,
-            )
-            self.assertNotEqual(result.returncode, 0)
-            self.assertFalse((destination / "lychee").exists())
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.script = self.root / "install-file-tools.sh"
+        shutil.copy2(INSTALLER, self.script)
+        self.arguments = self.root / "arguments.json"
+        (self.root / "shared-ci.py").write_text(
+            "import json, os, sys\nfrom pathlib import Path\n"
+            'Path(os.environ["ARGUMENT_LOG"]).write_text(json.dumps(sys.argv[1:]))\n'
+            'raise SystemExit(int(os.environ.get("INSTALL_STATUS", "0")))\n',
+            encoding="utf-8",
+        )
 
-    def test_unknown_mode_is_rejected_before_download(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            destination = Path(temporary) / "installed"
-            result = subprocess.run(
-                ["bash", str(INSTALLER), str(destination), "--unknown"],
-                capture_output=True,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 2)
-            self.assertFalse(destination.exists())
+    def invoke(self, *arguments: str, status: int = 0) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(
+            ["bash", str(self.script), *arguments],
+            env={**os.environ, "ARGUMENT_LOG": str(self.arguments), "INSTALL_STATUS": str(status)},
+            capture_output=True,
+            check=False,
+        )
 
+    def test_complete_website_profile_is_delegated_with_literal_destination(self) -> None:
+        destination = str(self.root / "installed tools")
+        result = self.invoke(destination)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(
+            json.loads(self.arguments.read_text()),
+            ["tools", "--destination", destination, "--profile", "website"],
+        )
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_maintenance_selects_only_lychee_and_preserves_failure_status(self) -> None:
+        destination = str(self.root / "installed")
+        result = self.invoke(destination, "--lychee-only", status=17)
+        self.assertEqual(result.returncode, 17)
+        self.assertEqual(
+            json.loads(self.arguments.read_text()),
+            ["tools", "--destination", destination, "--tools", "lychee"],
+        )
+        self.assertFalse(Path(destination).exists())
+
+    def test_unknown_mode_and_extra_arguments_fail_before_bootstrap(self) -> None:
+        for arguments in (("installed", "--unknown"), ("installed", "full", "extra")):
+            with self.subTest(arguments=arguments):
+                self.assertEqual(self.invoke(*arguments).returncode, 2)
+                self.assertFalse(self.arguments.exists())

@@ -4,36 +4,51 @@ Dependencies must have a direct, documented purpose and be locked to reproducibl
 
 ## Current direct tools
 
-| Tool              | Authoritative pin                               | License           | Purpose                                                                     | Decision                                                         |
-| ----------------- | ----------------------------------------------- | ----------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Zensical          | `pyproject.toml` and `uv.lock`                  | MIT               | Static site generation, navigation, search, theming, strict link validation | Accepted while pre-1.0; exact pin and Renovate review required   |
-| uv                | `.github/automation.json` and verified launcher | Apache-2.0 OR MIT | Python environment and lock-file management                                 | Accepted; canonical verified setup for complete execution        |
-| Ruff              | `pyproject.toml` and `uv.lock`                  | MIT               | Python formatting and linting                                               | Accepted for repository tooling only                             |
-| CSpell            | `package.json` and `package-lock.json`          | MIT               | Repository spelling validation                                              | Shared editor and deterministic CI configuration                 |
-| Prettier          | `package.json` and `package-lock.json`          | MIT               | Markdown, JSON, YAML, CSS, and HTML formatting                              | Shared with the other BoxFerry repositories                      |
-| markdownlint-cli2 | `package.json` and `package-lock.json`          | MIT               | Markdown linting                                                            | Shared with the other BoxFerry repositories                      |
-| Tombi             | `scripts/install-file-tools.sh`                 | MIT               | TOML formatting and linting                                                 | Shared with the other BoxFerry repositories                      |
-| shfmt             | `scripts/install-file-tools.sh`                 | BSD-3-Clause      | Shell formatting                                                            | Shared with the other BoxFerry repositories                      |
-| ShellCheck        | `scripts/install-file-tools.sh`                 | GPL-3.0           | Shell linting                                                               | Shared with the other BoxFerry repositories                      |
-| Hadolint          | `scripts/install-file-tools.sh`                 | GPL-3.0           | Dockerfile linting                                                          | Shared with the other BoxFerry repositories                      |
-| actionlint        | `scripts/install-file-tools.sh`                 | MIT               | GitHub Actions syntax and expression linting                                | Shared with the other BoxFerry repositories                      |
-| zizmor            | `pyproject.toml` and `uv.lock`                  | MIT               | GitHub Actions security audit                                               | Shared with BoxFerry's current pin                               |
-| Lychee            | `scripts/install-file-tools.sh`                 | Apache-2.0 OR MIT | Offline local links and rate-limited external-link health                   | Verified Linux release archives for both supported architectures |
+| Tool              | Authoritative pin                                 | License           | Purpose                                                                     | Decision                                                         |
+| ----------------- | ------------------------------------------------- | ----------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Zensical          | `pyproject.toml` and `uv.lock`                    | MIT               | Static site generation, navigation, search, theming, strict link validation | Accepted while pre-1.0; exact pin and complete build required    |
+| uv                | shared automation manifest and verified bootstrap | Apache-2.0 OR MIT | Python environment and lock-file management                                 | Canonical shared owner; verified archive integrity               |
+| Ruff              | shared automation manifest                        | MIT               | Python formatting and linting                                               | Accepted for repository tooling only                             |
+| ty                | shared automation manifest                        | MIT               | Python type checking for repository scripts and tests                       | Shared with the common Python toolchain                          |
+| CSpell            | `package.json` and `package-lock.json`            | MIT               | Repository spelling validation                                              | Shared editor and deterministic CI configuration                 |
+| Prettier          | `package.json` and `package-lock.json`            | MIT               | Markdown, JSON, YAML, CSS, and HTML formatting                              | Shared with the other BoxFerry repositories                      |
+| markdownlint-cli2 | `package.json` and `package-lock.json`            | MIT               | Markdown linting                                                            | Shared with the other BoxFerry repositories                      |
+| Tombi             | shared `automation/tool-artifacts.json`           | MIT               | TOML formatting and linting                                                 | Shared with the other BoxFerry repositories                      |
+| shfmt             | shared `automation/tool-artifacts.json`           | BSD-3-Clause      | Shell formatting                                                            | Shared with the other BoxFerry repositories                      |
+| ShellCheck        | shared `automation/tool-artifacts.json`           | GPL-3.0           | Shell linting                                                               | Shared with the other BoxFerry repositories                      |
+| Hadolint          | shared `automation/tool-artifacts.json`           | GPL-3.0           | Dockerfile linting                                                          | Shared with the other BoxFerry repositories                      |
+| actionlint        | shared `automation/tool-artifacts.json`           | MIT               | GitHub Actions syntax and expression linting                                | Shared with the other BoxFerry repositories                      |
+| zizmor            | `pyproject.toml` and `uv.lock`                    | MIT               | GitHub Actions security audit                                               | Shared with BoxFerry's current pin                               |
+| Lychee            | shared `automation/tool-artifacts.json`           | Apache-2.0 OR MIT | Offline local links and rate-limited external-link health                   | Verified Linux release archives for both supported architectures |
 
 Zensical is an actively maintained but pre-1.0 build dependency. Configuration changes must be
 reviewed against its current documentation, and Renovate updates must pass the complete site build.
 
-The file-tool installer verifies the versioned Lychee archive against a recorded SHA-256 for each
-Linux architecture and checks the extracted executable's version. Its `--lychee-only` mode keeps
-repository-maintenance PRs from downloading the other native tools. Renovate tracks the upstream
-`lychee-v` release tags at the installer pin and requires approval and fresh checksum review for
-both archives before an update can merge. The full installer remains the canonical tool setup for
-complete CI and deployment checks. GitHub jobs install these tools without `sudo` into their own
-runner temporary directory and add only that directory to the job's executable path.
+The local file-tool installer delegates the website profile or Lychee-only subset to the same
+immutable shared implementation. Its canonical inventory owns all six tool versions and both
+Linux architecture checksums once. The common preset updates each release tag and asset digest
+atomically. No local checksum pins or routine manual approvals remain. Complete CI and deployment
+install to runner temporary directories. Corrupt downloads, unsafe archives, unsupported platforms
+and checksum mismatches fail before installation.
 
 Browser-side analytics, tracking, remote fonts, or third-party JavaScript require a separate
 privacy and dependency decision before addition.
 
-Initial bootstrap binds canonical uv through the verified launcher and keeps the complete pipeline.
-Existing locked site dependencies remain local. Shared selection, dependency-reader enforcement
-and common-preset ownership activate in stage 2; this first stage does not claim that rollout.
+## Shared update policy
+
+The immutable common preset in `.github/renovate.json` owns automatic dependency PRs, the 72-hour
+third-party hold, Python package declarations and lock maintenance. Canonical uv, Ruff and ty execution lives only
+in the shared implementation; the website lock contains its site and workflow-audit dependencies. Local rules own the website's native
+installer, Node setup and exact documentation-source revisions once. Documentation-source updates
+are first-party updates; isolated published first-party PRs and necessary transitive resolution
+have no age hold. Mixed third-party changes retain the ordinary policy.
+
+The default-branch eligibility service evaluates metadata without executing candidate code.
+Candidate CI only reads the exact revision's admission evidence using the trusted base manifest's
+automation revision. Main, manual validation and protected deployment remain complete. Deployment
+requires a separate explicit operator request; dependency automerge never publishes the site.
+
+`deployment/historical-uv.json` freezes verified uv 0.13.5 integrity for the preserved pre-adoption
+rebuild path. It is historical evidence, not an active upgrade pin: no Renovate manager extracts
+it. The legacy version is read from the approved source's original TOML declaration; new sources
+use their own canonical shared revision. See the deployment runbook.
