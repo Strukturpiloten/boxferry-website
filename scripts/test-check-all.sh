@@ -34,7 +34,7 @@ esac
 MOCK
 chmod +x "${test_root}/bin/mock"
 for tool in actionlint bash cargo cargo-deny cargo-llvm-cov cargo-semver-checks cspell curl git \
-  hadolint jq lychee markdownlint-cli2 npm prettier rustup shellcheck shfmt tombi uv zizmor; do
+  hadolint jq lychee markdownlint-cli2 npm prettier python3 rustup shellcheck shfmt tombi uv zizmor; do
   ln -s mock "${test_root}/bin/${tool}"
 done
 
@@ -69,9 +69,11 @@ if grep -q '^cargo fmt' "${test_root}/fix.commands"; then
   assert_contains fix "cargo fmt --all"
   assert_contains check "cargo fmt --all -- --check"
 else
-  assert_contains fix "uv run --frozen ruff format scripts tests"
-  assert_contains check "uv run --frozen ruff format --check scripts tests"
+  assert_contains fix "python3 scripts/shared-ci.py run --task python-format --report-json target/python-format.json"
+  assert_contains check "python3 scripts/shared-ci.py run --task python-format-check --report-json target/python-format.json"
   assert_contains check "uv run --frozen python scripts/generate_brand_assets.py --check"
+  assert_contains check "python3 scripts/shared-ci.py run --task python-quality --report-json target/python-quality.json"
+  assert_contains check "python3 scripts/shared-ci.py run --task automation-policy --report-json target/automation-policy.json"
   # The explicit flag wins over the website's existing environment default.
   export BOXFERRY_WEBSITE_FORMAT_MODE=check
   run_gate explicit_fix --fix
@@ -82,7 +84,7 @@ fi
 
 # Both modes must request every non-formatting validation step, in the same order.
 for mode in fix check; do
-  grep -vE '^(cargo fmt|bash scripts/check-files.sh|uv run --frozen ruff format|uv run --frozen python scripts/generate_brand_assets.py)' \
+  grep -vE '^(cargo fmt|bash scripts/check-files.sh|python3 scripts/shared-ci.sh|python3 scripts/shared-ci.py run --task python-format[^ ]*|uv run --frozen python scripts/generate_brand_assets.py)' \
     "${test_root}/${mode}.commands" > "${test_root}/${mode}.validation"
 done
 diff -u "${test_root}/fix.validation" "${test_root}/check.validation"

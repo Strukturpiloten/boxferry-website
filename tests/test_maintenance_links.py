@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -19,15 +20,13 @@ class MaintenanceLinkTests(unittest.TestCase):
             repository = Path(temporary)
             scripts = repository / "scripts"
             scripts.mkdir()
-            for filename in ("check-maintenance-docs.sh", "validation-plan.py"):
+            for filename in ("check-maintenance-docs.sh", "validation-policy.json"):
                 shutil.copyfile(ROOT / "scripts" / filename, scripts / filename)
             shutil.copyfile(ROOT / "lychee.toml", repository / "lychee.toml")
 
-            listed = subprocess.check_output(
-                ["python3", str(scripts / "validation-plan.py"), "--list-docs"]
-            )
-            for raw_name in listed.rstrip(b"\0").split(b"\0"):
-                path = repository / raw_name.decode()
+            policy = json.loads((scripts / "validation-policy.json").read_text(encoding="utf-8"))
+            for name in policy["path_profiles"]["prose"]:
+                path = repository / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("# Maintenance document\n", encoding="utf-8")
 
@@ -39,6 +38,7 @@ class MaintenanceLinkTests(unittest.TestCase):
                 helper.chmod(0o755)
             environment = os.environ.copy()
             environment["PATH"] = f"{tools}:{environment['PATH']}"
+            environment["BOXFERRY_WEBSITE_SHARED_TOOLS"] = "1"
             command = ["bash", str(scripts / "check-maintenance-docs.sh")]
 
             (repository / "README.md").write_text(

@@ -28,8 +28,3 @@ deployment remains a separately requested operator action under ADR 0003.
 Before the first automation release tag, the shared infrastructure exception in BoxFerry ADR 0092
 permits a reviewed full commit SHA with an honest bootstrap comment. It grants no release or
 deployment authority. Rollback restores the previous reviewed manifest, workflows and preset SHA.
-
-During complete-only bootstrap, one `automation-v1` digest group advances the authority manifest,
-shared-source checkout and eligibility workflow/input together. Automatic merging of this group
-remains disabled until stage 2 adopts the common preset and dependency waiter. Documentation source
-revisions retain their separate group and existing validation-gated automatic merging.

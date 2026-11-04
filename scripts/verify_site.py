@@ -138,15 +138,15 @@ class _HomepageFormats(HTMLParser):
         self.guides: list[tuple[str | None, str | None]] = []
         self.headings: list[str | None] = []
 
-    def handle_starttag(self, tag: str, attributes: list[tuple[str, str | None]]) -> None:
-        attrs = dict(attributes)
-        classes = (attrs.get("class") or "").split()
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        classes = (attributes.get("class") or "").split()
         if tag == "li" and "bf-format-chip" in classes:
-            self.chips.append(attrs.get("data-bf-format"))
+            self.chips.append(attributes.get("data-bf-format"))
         if tag == "a" and "bf-format-guide" in classes:
-            self.guides.append((attrs.get("data-bf-format"), attrs.get("href")))
+            self.guides.append((attributes.get("data-bf-format"), attributes.get("href")))
         if tag == "h1":
-            self.headings.append(attrs.get("id"))
+            self.headings.append(attributes.get("id"))
 
 
 def _verify_homepage_formats(site: Path, formats: list[dict[str, str]]) -> None:

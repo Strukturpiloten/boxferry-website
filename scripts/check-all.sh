@@ -10,7 +10,7 @@ cd -- "${repository_root}"
 
 current_step="preflight"
 step=0
-readonly total_steps=19
+readonly total_steps=20
 
 fail() {
   printf 'BoxFerry website local validation failed: %s\n' "$1" >&2
@@ -93,12 +93,14 @@ if ((${#missing_tools[@]} != 0)); then
 fi
 
 if [[ "${format_mode}" == "fix" ]]; then
-  run_step "Format Python" uv run --frozen ruff format scripts tests
+  run_step "Format Python" python3 scripts/shared-ci.py run --task python-format \
+    --report-json target/python-format.json
   file_mode="--fix"
   brand_step="Generate token-derived brand assets"
   brand_arguments=()
 else
-  run_step "Check Python formatting" uv run --frozen ruff format --check scripts tests
+  run_step "Check Python formatting" python3 scripts/shared-ci.py run --task python-format-check \
+    --report-json target/python-format.json
   file_mode="--check"
   brand_step="Check token-derived brand assets"
   brand_arguments=(--check)
@@ -114,7 +116,10 @@ run_step "Check whitespace errors" git --no-pager diff --check
 run_step "Lint GitHub Actions syntax" actionlint
 run_step "Audit GitHub Actions security" uv run --frozen zizmor .github/workflows
 run_step "Check locked dependency resolution" uv lock --check
-run_step "Lint Python" uv run --frozen ruff check scripts tests
+run_step "Lint and type check Python" python3 scripts/shared-ci.py run --task python-quality \
+  --report-json target/python-quality.json
+run_step "Check effective shared website policy" python3 scripts/shared-ci.py run --task automation-policy \
+  --report-json target/automation-policy.json
 run_step "Run repository tests" uv run --frozen python -m unittest discover -s tests -v
 run_step "Assemble documentation" uv run --frozen python scripts/assemble_docs.py \
   --source-mode "${source_mode}"

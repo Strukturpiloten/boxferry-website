@@ -6,9 +6,29 @@ script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repository_root="$(cd -- "${script_directory}/.." && pwd -P)"
 cd -- "${repository_root}"
 
-# The classifier owns this inventory. Changes to either script select the
-# complete PR gate, so a PR cannot change its own policy and qualify as prose.
-mapfile -d '' maintenance_docs < <(python3 scripts/validation-plan.py --list-docs)
+if [[ "${BOXFERRY_WEBSITE_SHARED_TOOLS:-}" != 1 ]]; then
+  exec python3 "${repository_root}/scripts/shared-ci.py" run --task maintenance \
+    --report-json "${repository_root}/target/maintenance.json"
+fi
+
+# The shared trusted policy owns this exact inventory.
+markdown_inventory="$(mktemp)"
+trap 'rm -f -- "${markdown_inventory}"' EXIT
+python3 - > "${markdown_inventory}" << 'PYTHON'
+import json
+import sys
+
+with open("scripts/validation-policy.json", encoding="utf-8") as policy_file:
+    policy = json.load(policy_file)
+sys.stdout.buffer.write(
+    b"\0".join(path.encode() for path in policy["path_profiles"]["prose"]) + b"\0"
+)
+PYTHON
+mapfile -d '' maintenance_docs < "${markdown_inventory}"
+if ((${#maintenance_docs[@]} == 0)); then
+  printf 'No maintenance documents declared by policy.\n' >&2
+  exit 2
+fi
 
 npm ci --ignore-scripts
 export PATH="${repository_root}/node_modules/.bin:${PATH}"

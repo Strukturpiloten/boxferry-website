@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
 import tempfile
-import textwrap
 import tomllib
 import unittest
 from pathlib import Path
@@ -49,114 +47,6 @@ def exact_node_pins(dependencies: dict[str, str]) -> dict[str, str]:
     return dependencies
 
 
-def extracted_uv_versions(configuration: dict, sources: dict[str, str]) -> dict[str, str]:
-    """Check actual Renovate extraction, not just the presence of annotation text."""
-    versions = {}
-    for path, source in sources.items():
-        matches = []
-        for manager in configuration["customManagers"]:
-            if manager["customType"] != "regex" or not any(
-                re.search(pattern[1:-1], path) for pattern in manager["managerFilePatterns"]
-            ):
-                continue
-            for pattern in manager["matchStrings"]:
-                converted = re.sub(r"\(\?<([A-Za-z][A-Za-z0-9_]*)>", r"(?P<\1>", pattern)
-                for match in re.finditer(converted, source):
-                    fields = match.groupdict()
-                    datasource = fields.get("datasource", manager.get("datasourceTemplate"))
-                    name = fields.get("depName", manager.get("depNameTemplate"))
-                    if (datasource, name) == ("github-releases", "astral-sh/uv"):
-                        matches.append(fields["currentValue"])
-        if len(matches) != 1:
-            raise ValueError("each uv version needs exactly one Renovate owner")
-        versions[path] = matches[0]
-    if len(set(versions.values())) != 1:
-        raise ValueError("required and workflow uv versions must agree")
-    return versions
-
-
-def shared_automation_pins(configuration: dict, sources: dict[str, str]) -> list[dict]:
-    """Exercise exact custom extraction and require one owner for each authority slot."""
-    rule = configuration["packageRules"][-1]
-    expected_rule = {
-        "matchManagers": ["github-actions", "custom.regex"],
-        "matchDatasources": ["github-digest"],
-        "matchPackageNames": ["Strukturpiloten/boxferry"],
-        "matchFileNames": [
-            ".github/automation.json",
-            ".github/workflows/ci.yml",
-            ".github/workflows/dependency-eligibility.yml",
-        ],
-        "groupName": "Shared BoxFerry automation",
-        "minimumReleaseAge": "0 days",
-        "dependencyDashboardApproval": False,
-        "automerge": False,
-        "automergeType": "pr",
-        "platformAutomerge": False,
-    }
-    if any(rule.get(key) != value for key, value in expected_rule.items()):
-        raise ValueError("the final rule must keep bootstrap automation atomic and held")
-    expected_patterns = {
-        ".github/automation.json": r'"revision"\s*:\s*"(?P<digest>[a-f0-9]{40})"',
-        ".github/workflows/ci.yml": (
-            r"repository: Strukturpiloten/boxferry\n(?:[ \t]*#[^\n]*\n)?"
-            r"[ \t]*ref: (?P<digest>[a-f0-9]{40})"
-        ),
-        ".github/workflows/dependency-eligibility.yml": (
-            r"(?:uses: Strukturpiloten/boxferry/\.github/workflows/"
-            r"shared-dependency-eligibility\.yml@|automation-sha: )"
-            r"(?P<digest>[a-f0-9]{40})"
-        ),
-    }
-    expected = {}
-    for path, pattern in expected_patterns.items():
-        matches = list(re.finditer(pattern, sources[path]))
-        if len(matches) != (2 if path.endswith("dependency-eligibility.yml") else 1):
-            raise ValueError("all four immutable authority slots must be present")
-        for match in matches:
-            expected[path, *match.span("digest")] = match.group("digest")
-    owners: dict[tuple, list[dict]] = {slot: [] for slot in expected}
-    for path, source in sources.items():
-        for manager in configuration["customManagers"]:
-            if not any(
-                re.search(pattern[1:-1], path) for pattern in manager["managerFilePatterns"]
-            ):
-                continue
-            for pattern in manager["matchStrings"]:
-                converted = re.sub(r"\(\?<([A-Za-z][A-Za-z0-9_]*)>", r"(?P<\1>", pattern)
-                for match in re.finditer(converted, source):
-                    fields = match.groupdict()
-                    if (
-                        fields.get("datasource", manager.get("datasourceTemplate")),
-                        fields.get("depName", manager.get("depNameTemplate")),
-                    ) != ("github-digest", "Strukturpiloten/boxferry"):
-                        continue
-                    slot = path, *match.span("currentDigest")
-                    if slot not in owners or manager.get("currentValueTemplate") != "automation-v1":
-                        raise ValueError("automation extraction must claim only its exact slots")
-                    owners[slot].append(
-                        {"manager": "custom.regex", "digest": fields["currentDigest"]}
-                    )
-        if path.endswith("dependency-eligibility.yml"):
-            for match in re.finditer(
-                r"uses: Strukturpiloten/boxferry/\.github/workflows/"
-                r"shared-dependency-eligibility\.yml@(?P<digest>[a-f0-9]{40})"
-                r" # automation-v1 interface v1",
-                source,
-            ):
-                owners[path, *match.span("digest")].append(
-                    {"manager": "github-actions", "digest": match.group("digest")}
-                )
-    if any(len(matches) != 1 for matches in owners.values()):
-        raise ValueError("each automation pin needs exactly one Renovate owner")
-    if len(set(expected.values())) != 1:
-        raise ValueError("all automation pins must agree")
-    return [
-        {"path": path, "start": start, "end": end, **owners[path, start, end][0]}
-        for path, start, end in owners
-    ]
-
-
 def validate_eligibility_listener(source: str, manifest: dict) -> None:
     """Allow only the reviewed metadata listener shape, without a YAML parser dependency."""
     revision = manifest["revision"]
@@ -177,6 +67,12 @@ permissions:
   statuses: write
 jobs:
   eligibility:
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+      pull-requests: write
+      statuses: write
     if: >-
       github.event_name == 'schedule' ||
       (github.event_name == 'workflow_run' &&
@@ -574,7 +470,7 @@ class RepositoryPolicyTests(unittest.TestCase):
 
         dependencies = configuration["dependency-groups"]["dev"]
         configured_pins = exact_python_pins(dependencies)
-        self.assertEqual(set(configured_pins), {"ruff", "zensical", "zizmor"})
+        self.assertEqual(set(configured_pins), {"zensical", "zizmor"})
 
         root_package = next(
             package for package in lock["package"] if package["name"] == "boxferry-website"
@@ -597,89 +493,61 @@ class RepositoryPolicyTests(unittest.TestCase):
 
         self.assertNotIn("uv", configuration["tool"])
 
-    def test_stage1_verified_uv_owner_replaces_the_consumer_constraint(self) -> None:
+    def test_uv_ruff_and_ty_have_one_shared_execution_owner(self) -> None:
+        configuration = json.loads((ROOT / ".github/renovate.json").read_text())
         project = tomllib.loads((ROOT / "pyproject.toml").read_text())
         self.assertNotIn("uv", project["tool"])
+        self.assertFalse(
+            any("ruff==" in pin or "ty==" in pin for pin in project["dependency-groups"]["dev"])
+        )
         for name in ("ci.yml", "deploy.yml"):
             workflow = (ROOT / ".github/workflows" / name).read_text()
             self.assertIn("uses: ./_automation/.github/actions/shared-python", workflow)
-        configuration = json.loads((ROOT / ".github/renovate.json").read_text())
+            if name == "ci.yml":
+                self.assertNotIn("astral-sh/setup-uv@", workflow)
+            else:
+                self.assertIn("version-file: source/pyproject.toml", workflow)
+                self.assertIn("checksum: ${{ steps.toolchain.outputs.legacy_checksum }}", workflow)
         self.assertFalse(
             any(
-                manager["description"] == "Update the required uv CLI version"
+                "/^pyproject\\.toml$/" in manager.get("managerFilePatterns", [])
                 for manager in configuration["customManagers"]
             )
         )
-
-    def automation_sources(self) -> dict[str, str]:
-        return {
-            path: (ROOT / path).read_text()
-            for path in (
-                ".github/automation.json",
-                ".github/workflows/ci.yml",
-                ".github/workflows/dependency-eligibility.yml",
-                "documentation-sources.toml",
-            )
-        }
-
-    def test_bootstrap_automation_has_four_single_owners_and_one_atomic_group(self) -> None:
-        configuration = json.loads((ROOT / ".github/renovate.json").read_text())
-        sources = self.automation_sources()
-        pins = shared_automation_pins(configuration, sources)
-        self.assertEqual(len(pins), 4)
-        self.assertEqual([pin["manager"] for pin in pins].count("custom.regex"), 3)
-        self.assertEqual([pin["manager"] for pin in pins].count("github-actions"), 1)
-        future = "b" * 40
-        changed = dict(sources)
-        for pin in sorted(pins, key=lambda pin: pin["start"], reverse=True):
-            path = pin["path"]
-            changed[path] = changed[path][: pin["start"]] + future + changed[path][pin["end"] :]
-        self.assertEqual(
-            changed["documentation-sources.toml"], sources["documentation-sources.toml"]
-        )
-        self.assertEqual(
-            {pin["digest"] for pin in shared_automation_pins(configuration, changed)}, {future}
-        )
-
-    def test_bootstrap_automation_rejects_missing_duplicate_or_late_owners(self) -> None:
-        configuration = json.loads((ROOT / ".github/renovate.json").read_text())
-        index = next(
-            index
-            for index, manager in enumerate(configuration["customManagers"])
-            if manager["managerFilePatterns"] == [r"/^\.github/automation\.json$/"]
-        )
-        mutations = []
-        missing = json.loads(json.dumps(configuration))
-        del missing["customManagers"][index]
-        mutations.append(missing)
-        duplicate = json.loads(json.dumps(configuration))
-        duplicate["customManagers"].append(duplicate["customManagers"][index])
-        mutations.append(duplicate)
-        late = json.loads(json.dumps(configuration))
-        late["packageRules"].append({"matchUpdateTypes": ["digest"], "automerge": True})
-        mutations.append(late)
-        for mutation in mutations:
-            with self.subTest(configuration=mutation), self.assertRaises(ValueError):
-                shared_automation_pins(mutation, self.automation_sources())
-        sources = self.automation_sources()
-        path = ".github/workflows/dependency-eligibility.yml"
-        sources[path] = sources[path].replace("# automation-v1 interface v1", "# unversioned")
-        with self.assertRaises(ValueError):
-            shared_automation_pins(configuration, sources)
-        sources = self.automation_sources()
-        revision = json.loads(sources[".github/automation.json"])["revision"]
-        sources[path] = sources[path].replace(
-            "automation-sha: " + revision, "automation-sha: " + "b" * 40
-        )
-        with self.assertRaises(ValueError):
-            shared_automation_pins(configuration, sources)
+        self.assertEqual(len(configuration["extends"]), 1)
+        self.assertIn("/renovate-presets/common#", configuration["extends"][0])
 
     def test_eligibility_listener_is_metadata_only_and_authority_aligned(self) -> None:
         source = (ROOT / ".github/workflows/dependency-eligibility.yml").read_text()
         manifest = json.loads((ROOT / ".github/automation.json").read_text())
         validate_eligibility_listener(source, manifest)
         revision = manifest["revision"]
+        permission_scopes = {
+            "actions": "write",
+            "checks": "read",
+            "contents": "read",
+            "pull-requests": "write",
+            "statuses": "write",
+        }
+        job_permissions = "    permissions:\n" + "".join(
+            f"      {scope}: {level}\n" for scope, level in permission_scopes.items()
+        )
+        self.assertIn(job_permissions, source)
+        permission_mutations = [
+            source.replace(job_permissions, "", 1),
+            source.replace(job_permissions, job_permissions + "      issues: write\n", 1),
+        ]
+        for scope, level in permission_scopes.items():
+            permission = f"      {scope}: {level}\n"
+            wrong_level = "write" if level == "read" else "read"
+            permission_mutations.extend(
+                (
+                    source.replace(permission, "", 1),
+                    source.replace(permission, f"      {scope}: {wrong_level}\n", 1),
+                )
+            )
         mutations = (
+            *permission_mutations,
             source.replace("on:", "on:\n  push:", 1),
             source.replace("workflows: [CI]", "workflows: [Release]"),
             source.replace("[requested, completed]", "[in_progress, completed]"),
@@ -694,8 +562,10 @@ class RepositoryPolicyTests(unittest.TestCase):
             source.replace("automation-sha: " + revision, "automation-sha: " + "b" * 40),
         )
         for mutation in mutations:
-            with self.subTest(source=mutation), self.assertRaises(ValueError):
-                validate_eligibility_listener(mutation, manifest)
+            with self.subTest(source=mutation):
+                self.assertNotEqual(mutation, source)
+                with self.assertRaises(ValueError):
+                    validate_eligibility_listener(mutation, manifest)
         with self.assertRaises(ValueError):
             validate_eligibility_listener(source, {**manifest, "revision": "main"})
 
@@ -779,32 +649,41 @@ class RepositoryPolicyTests(unittest.TestCase):
                 with self.subTest(workflow=workflow.name, line=line):
                     if "uses: ./_automation/.github/actions/" in line:
                         self.assertIn("repository: Strukturpiloten/boxferry", workflow.read_text())
+                        if workflow.name == "deploy.yml":
+                            self.assertIn(
+                                "ref: ${{ steps.toolchain.outputs.automation_sha }}",
+                                workflow.read_text(),
+                            )
+                        else:
+                            self.assertIn("currentValue=automation-v1", workflow.read_text())
                     elif "Strukturpiloten/boxferry/.github/workflows/" in line:
                         self.assertRegex(line, r"@[0-9a-f]{40} # automation-v1 interface v1")
                     else:
                         self.assertRegex(line, ACTION_PATTERN)
 
     def test_renovate_polls_and_merges_documentation_source_revisions(self) -> None:
-        configuration = json.loads((ROOT / ".github" / "renovate.json").read_text(encoding="utf-8"))
+        configuration = json.loads((ROOT / ".github/renovate.json").read_text())
         manager = next(
             manager
             for manager in configuration["customManagers"]
             if manager.get("datasourceTemplate") == "git-refs"
         )
-        self.assertEqual(manager["managerFilePatterns"], ["/^documentation-sources\\.toml$/"])
-        self.assertEqual(manager["currentValueTemplate"], "main")
-        self.assertIn("(?<packageName>https://github", manager["matchStrings"][0])
-        self.assertIn("(?<currentDigest>[0-9a-f]{40})", manager["matchStrings"][0])
-        manifest = (ROOT / "documentation-sources.toml").read_text(encoding="utf-8")
-        pattern = manager["matchStrings"][0].replace("(?<", "(?P<")
-        matches = list(re.finditer(pattern, manifest))
+        matches = list(
+            re.finditer(
+                manager["matchStrings"][0].replace("(?<", "(?P<"),
+                (ROOT / "documentation-sources.toml").read_text(),
+            )
+        )
         self.assertEqual(
             [match.group("depName") for match in matches],
-            ["boxferry", "compose-lens", "podman-lens", "quadlet-lens"],
+            [
+                "Strukturpiloten/boxferry",
+                "Strukturpiloten/compose-lens",
+                "Strukturpiloten/podman-lens",
+                "Strukturpiloten/quadlet-lens",
+            ],
         )
-        for match in matches:
-            self.assertRegex(match.group("currentDigest"), r"\A[0-9a-f]{40}\Z")
-
+        self.assertEqual(manager["packageNameTemplate"], "{{depName}}")
         rule = next(
             rule
             for rule in configuration["packageRules"]
@@ -812,266 +691,110 @@ class RepositoryPolicyTests(unittest.TestCase):
         )
         self.assertEqual(rule["matchFileNames"], ["documentation-sources.toml"])
         self.assertEqual(rule["minimumReleaseAge"], "0 days")
-        self.assertEqual(rule["groupName"], "documentation sources")
+        self.assertEqual(
+            rule["matchPackageNames"],
+            [match.group("depName") for match in matches],
+        )
         self.assertTrue(rule["automerge"])
-        self.assertEqual(rule["automergeType"], "pr")
-        self.assertFalse(rule["platformAutomerge"])
 
-    def test_renovate_automerge_is_green_gated_with_manual_exceptions(self) -> None:
-        configuration = json.loads((ROOT / ".github" / "renovate.json").read_text(encoding="utf-8"))
-        rules = {rule.get("description"): rule for rule in configuration["packageRules"]}
-
-        compatible = rules["Automerge tested non-major dependency updates"]
+    def test_renovate_defers_shared_eligibility_without_local_manual_overrides(self) -> None:
+        configuration = json.loads((ROOT / ".github/renovate.json").read_text())
+        for rule in configuration["packageRules"]:
+            self.assertIsNot(rule.get("automerge"), False)
+            self.assertIsNot(rule.get("dependencyDashboardApproval"), True)
+        manifest = json.loads((ROOT / ".github/automation.json").read_text())
         self.assertEqual(
-            compatible["matchUpdateTypes"],
-            ["minor", "patch", "pin", "digest", "pinDigest"],
-        )
-        self.assertTrue(compatible["automerge"])
-        self.assertEqual(compatible["automergeType"], "pr")
-        self.assertFalse(compatible["platformAutomerge"])
-
-        internal = rules["Do not delay BoxFerry and Lens releases"]
-        self.assertEqual(internal["minimumReleaseAge"], "0 days")
-        self.assertEqual(
-            internal["matchPackageNames"],
-            [
-                "boxferry",
-                "boxferry-model",
-                "boxferry-engine",
-                "boxferry-compose",
-                "boxferry-podman",
-                "boxferry-quadlet",
-                "compose-lens",
-                "podman-lens",
-                "quadlet-lens",
-            ],
+            configuration["extends"],
+            [f"github>Strukturpiloten/boxferry//renovate-presets/common#{manifest['revision']}"],
         )
 
-        checksum_review = rules["Require checksum review for downloaded file-quality tools"]
-        self.assertFalse(checksum_review["automerge"])
-
-    def test_lychee_archive_pin_has_one_renovate_owner_and_reviewed_checksums(self) -> None:
-        configuration = json.loads((ROOT / ".github" / "renovate.json").read_text(encoding="utf-8"))
-        installer = (ROOT / "scripts" / "install-file-tools.sh").read_text(encoding="utf-8")
-        managers = [
-            manager
-            for manager in configuration["customManagers"]
-            if "/^scripts/install-file-tools\\.sh$/" in manager.get("managerFilePatterns", [])
-        ]
-        matches = [
-            (manager, match)
-            for manager in managers
-            for pattern in manager["matchStrings"]
-            if (match := re.search(pattern.replace("(?<", "(?P<"), installer))
-            and match.groupdict().get("depName") == "lycheeverse/lychee"
-        ]
-        self.assertEqual(len(matches), 1, "Lychee must have one Renovate extractor")
-        manager, match = matches[0]
-        self.assertEqual(match.group("currentValue"), "0.24.2")
-        self.assertEqual(match.group("datasource"), "github-releases")
-        self.assertIsNotNone(
-            re.fullmatch(
-                manager["extractVersionTemplate"].replace("(?<", "(?P<"),
-                "lychee-v0.24.2",
+    def test_native_file_tools_have_one_canonical_inventory_owner(self) -> None:
+        installer = (ROOT / "scripts/install-file-tools.sh").read_text()
+        self.assertIn('shared-ci.py" tools', installer)
+        self.assertIn("--profile website", installer)
+        self.assertIn("--tools lychee", installer)
+        for obsolete in ("readonly lychee_version", "lychee_checksum", "curl --", "# renovate:"):
+            self.assertNotIn(obsolete, installer)
+        configuration = json.loads((ROOT / ".github/renovate.json").read_text())
+        self.assertFalse(
+            any(
+                "install-file-tools" in pattern
+                for manager in configuration["customManagers"]
+                for pattern in manager["managerFilePatterns"]
             )
         )
-        self.assertIn(
-            'readonly lychee_checksum="'
-            "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
-            '"',
-            installer,
-        )
-        self.assertIn(
-            'readonly lychee_checksum="'
-            "91a7bd65685da41b90ccb9bc867a3d649a7818042dae04ff405e55a25bddee4c"
-            '"',
-            installer,
-        )
-        checksum_rule_name = "Require checksum review for downloaded file-quality tools"
-        checksum_review = next(
-            rule
-            for rule in configuration["packageRules"]
-            if rule.get("description") == checksum_rule_name
-        )
-        self.assertTrue(checksum_review["dependencyDashboardApproval"])
-        self.assertFalse(checksum_review["automerge"])
 
     def test_deployment_workflow_preserves_static_release_contract(self) -> None:
-        workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
-        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-
+        deployment = (ROOT / ".github/workflows/deploy.yml").read_text()
+        ci = (ROOT / ".github/workflows/ci.yml").read_text()
         for expected in (
-            "show-authorized-keys",
-            "bootstrap",
-            "deploy",
-            "rollback",
+            "workflow_dispatch:",
             "name: production",
-            "scripts/prepare-deployment-keys.sh",
             "./scripts/check-all.sh",
-            "BOXFERRY_RSYNC_SSH_PRIVATE_KEY",
-            "BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY",
-            "BOXFERRY_DEPLOY_KNOWN_HOSTS",
-            "BOXFERRY_SITE_ORIGIN",
+            "BOXFERRY_WEBSITE_SOURCE_MODE: locked",
+            "include-hidden-files: true",
+            "inputs.revision || github.sha",
+            "git merge-base --is-ancestor",
             "rsync -rlptz --delete --safe-links",
             "activate %s %s",
             "bootstrap %s %s",
             "finalize %s",
         ):
-            with self.subTest(expected=expected):
-                self.assertIn(expected, workflow)
-
-        self.assertIn("include-hidden-files: true", workflow)
-        self.assertNotIn("pull_request:", workflow)
-        for expected in (
-            "workflow_dispatch:",
-            "inputs.revision || github.sha",
-            "git merge-base --is-ancestor",
-            "ref: ${{ needs.request.outputs.revision }}",
-            "BOXFERRY_WEBSITE_REVISION",
-            "needs.request.outputs.operation == 'deploy'",
-            "needs.request.outputs.operation == 'bootstrap'",
-        ):
-            with self.subTest(expected=expected):
-                self.assertIn(expected, workflow)
-        for expected in (
-            "  push:",
-            "    branches:\n      - main",
-            "  pull_request:",
-            "name: Format, lint, test, and build",
-            "BOXFERRY_WEBSITE_SOURCE_MODE: locked",
-            "run: ./scripts/check-all.sh",
-            "name: Validation plan",
-            "path: .validation-base",
-            "python3 .validation-base/scripts/validation-plan.py",
-            "name: Check repository maintenance prose and local links",
-            "bash scripts/check-maintenance-docs.sh",
-            "name: Required CI",
-            "if: always()",
-            "needs: [validation-plan, quality]",
-            "if: needs.validation-plan.outputs.profile == 'full'",
-            "if: needs.validation-plan.outputs.profile == 'maintenance'",
-            '[[ "${PLAN_RESULT}" != success ]]',
-            '[[ "${QUALITY_RESULT}" != success ]]',
-        ):
-            with self.subTest(expected=expected):
-                self.assertIn(expected, ci)
+            self.assertIn(expected, deployment)
+        for forbidden in ("pull_request:", "workflow_run:", "pull_request_target:"):
+            self.assertNotIn(forbidden, deployment)
         for forbidden in (
-            "  production:",
+            "statuses: write",
             "actions: write",
-            "actions/workflows/deploy.yml/dispatches",
-            "inputs[operation]=deploy",
-            "gh api --method POST",
             "pull_request_target:",
+            "production:",
+            "inputs[operation]=deploy",
         ):
-            with self.subTest(forbidden=forbidden):
-                self.assertNotIn(forbidden, ci)
-        maintenance_script = (ROOT / "scripts" / "check-maintenance-docs.sh").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("lychee --config lychee.toml --root-dir . --offline", maintenance_script)
-        tool_directory = 'tool_dir="${RUNNER_TEMP}/boxferry-website-tools"'
-        path_export = 'printf \'%s\\n\' "${tool_dir}" >> "${GITHUB_PATH}"'
-        self.assertEqual(ci.count(tool_directory), 2)
-        self.assertEqual(ci.count(path_export), 2)
-        self.assertIn('bash source/scripts/install-file-tools.sh "${tool_dir}" --lychee-only', ci)
-        self.assertIn('bash source/scripts/install-file-tools.sh "${tool_dir}"', ci)
-        self.assertIn(tool_directory, workflow)
-        self.assertIn(path_export, workflow)
-        self.assertIn('bash source/scripts/install-file-tools.sh "${tool_dir}"', workflow)
-        self.assertNotIn("sudo bash scripts/install-file-tools.sh", ci + workflow)
-        self.assertNotIn("cargo install --locked --version 0.24.2 lychee", ci + workflow)
-        self.assertNotIn("workflow_run:", workflow)
-        self.assertNotIn("${GITHUB_SHA}", workflow)
-        self.assertNotIn("set -Eeuo pipefail", workflow)
-
-    def test_bootstrap_plan_forces_complete_validation_after_trusted_base_feedback(self) -> None:
-        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
-        planner = workflow.split("\n  validation-plan:\n", 1)[1].split("\n  quality:\n", 1)[0]
-        scripts = re.findall(r"^        run: \|\n((?:          .*\n|\n)+)", planner, re.MULTILINE)
-        self.assertEqual(len(scripts), 1)
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            trusted = root / ".validation-base/scripts/validation-plan.py"
-            trusted.parent.mkdir(parents=True)
-            trusted.write_text("print('maintenance')\n", encoding="utf-8")
-            result = subprocess.run(
-                ["bash", "--noprofile", "--norc", "-c", textwrap.dedent(scripts[0])],
-                cwd=root,
-                env={
-                    "PATH": os.environ["PATH"],
-                    "EVENT_NAME": "pull_request",
-                    "BASE_SHA": "a" * 40,
-                    "TESTED_SHA": "b" * 40,
-                    "GITHUB_WORKSPACE": str(root),
-                    "GITHUB_OUTPUT": str(root / "output"),
-                    "GITHUB_STEP_SUMMARY": str(root / "summary"),
-                },
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual((root / "output").read_text(), "profile=full\n")
+            self.assertNotIn(forbidden, ci)
+        self.assertIn("BOXFERRY_WEBSITE_SOURCE_MODE: locked", ci)
+        self.assertIn("shared-dependency-wait.yml@", ci)
+        self.assertIn("name: Dependency eligibility", ci)
+        self.assertIn("merge_group:", ci)
+        for permission in ("contents: read", "actions: read", "statuses: read"):
+            self.assertIn(permission, ci)
 
     def test_required_ci_is_the_unique_always_running_validation_aggregate(self) -> None:
-        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         gate = workflow.split("\n  pr-gate:\n", 1)[1]
-        gate = re.split(r"\n  [\w-]+:\n", gate, maxsplit=1)[0]
         self.assertIn("    name: Required CI\n", gate)
         self.assertIn("    if: always()\n", gate)
-        self.assertIn("    needs: [validation-plan, quality]\n", gate)
+        self.assertIn("    needs: [validation-plan, quality, lockfile-release-age]\n", gate)
+        self.assertIn("python -m boxferry_ci gate", gate)
+        self.assertIn("PLAN_JSON: ${{ needs.validation-plan.outputs.plan }}", gate)
+        self.assertIn("NEEDS_JSON: ${{ toJSON(needs) }}", gate)
+        self.assertIn('--plan-json "${PLAN_JSON}" --needs-json "${NEEDS_JSON}"', gate)
         self.assertNotIn("continue-on-error:", gate)
         self.assertNotIn("        if:", gate)
-        for expected in (
-            "PLAN_RESULT: ${{ needs.validation-plan.result }}",
-            "PROFILE: ${{ needs.validation-plan.outputs.profile }}",
-            "QUALITY_RESULT: ${{ needs.quality.result }}",
-        ):
-            self.assertIn(expected, gate)
-        matching_jobs = [
-            (path.name, match.group(1))
-            for path in (ROOT / ".github/workflows").glob("*.yml")
-            for match in re.finditer(
-                r"^  ([\w-]+):\n(?:(?!^  [\w-]+:).)*?^    name: Required CI$",
-                path.read_text(encoding="utf-8"),
-                flags=re.MULTILINE | re.DOTALL,
-            )
-        ]
-        self.assertEqual(matching_jobs, [("ci.yml", "pr-gate")])
+        self.assertEqual(workflow.count("name: Required CI"), 1)
 
-    def test_required_ci_rejects_incomplete_or_unplanned_validation(self) -> None:
-        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-        gate = workflow.split("\n  pr-gate:\n", 1)[1]
-        gate = re.split(r"\n  [\w-]+:\n", gate, maxsplit=1)[0]
-        scripts = re.findall(r"^        run: \|\n((?:          .*\n|\n)+)", gate, re.MULTILINE)
-        self.assertEqual(len(scripts), 1)
-        script = textwrap.dedent(scripts[0])
-        cases = [("success", "full", "success", True)]
-        for result in ("failure", "cancelled", "skipped", "", "unknown"):
-            for profile in ("full", "maintenance"):
-                cases.extend(
-                    ((result, profile, "success", False), ("success", profile, result, False))
-                )
-        cases.extend(
-            ("success", profile, "success", False) for profile in ("", "unknown", "maintenance")
-        )
-        with tempfile.TemporaryDirectory() as temporary:
-            for plan_result, profile, quality_result, expected_success in cases:
-                with self.subTest(plan=plan_result, profile=profile, quality=quality_result):
-                    result = subprocess.run(
-                        ["bash", "--noprofile", "--norc", "-c", script],
-                        env={
-                            "PLAN_RESULT": plan_result,
-                            "PROFILE": profile,
-                            "QUALITY_RESULT": quality_result,
-                            "GITHUB_STEP_SUMMARY": str(Path(temporary) / "summary.md"),
-                        },
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    self.assertEqual(result.returncode == 0, expected_success, result.stderr)
+    def test_shared_callers_bind_all_candidate_policy_and_implementation_identities(self) -> None:
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        for expected in (
+            '--event "${EVENT_NAME}"',
+            '--tested-sha "${GITHUB_SHA}"',
+            '--policy-sha "${POLICY_SHA}"',
+            '--automation-sha "${AUTOMATION_SHA}"',
+            "github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha",
+            "uses: ./_automation/.github/actions/shared-source",
+            "uses: ./_automation/.github/actions/shared-python",
+            "python -m boxferry_ci run-local",
+            "--report-json",
+            "if: always()",
+            "website-validation-${{ github.sha }}",
+        ):
+            self.assertIn(expected, workflow)
+        service = (ROOT / ".github/workflows/dependency-eligibility.yml").read_text()
+        self.assertIn("workflows: [CI]", service)
+        self.assertIn("types: [requested, completed]", service)
+        self.assertIn("schedule:", service)
+        self.assertNotIn("pull_request_target:", service)
+        self.assertNotIn("actions/checkout", service)
+        self.assertIn("shared-dependency-eligibility.yml@", service)
 
     def test_literal_colors_are_centralized(self) -> None:
         token_file = ROOT / "content" / "assets" / "stylesheets" / "tokens.css"
@@ -1115,13 +838,14 @@ class RepositoryPolicyTests(unittest.TestCase):
     def test_complete_gate_covers_every_repository_language(self) -> None:
         gate = (ROOT / "scripts" / "check-all.sh").read_text(encoding="utf-8")
         for expected in (
-            "ruff format",
+            "--task python-format",
             "generate_brand_assets.py",
             "scripts/check-files.sh",
             "cspell",
             "actionlint",
             "zizmor",
-            "ruff check",
+            "--task python-quality",
+            "--task automation-policy",
             "unittest discover",
             "assemble_docs.py",
             "zensical build",
@@ -1143,7 +867,14 @@ class RepositoryPolicyTests(unittest.TestCase):
             path
             for path in documents
             if not any(
-                part in {".generated", ".venv", "node_modules", "site", "temp"}
+                part
+                in {
+                    ".generated",
+                    ".venv",
+                    "node_modules",
+                    "site",
+                    "temp",
+                }
                 for part in path.relative_to(ROOT).parts
             )
         ]

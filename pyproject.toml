@@ -7,7 +7,6 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-  "ruff==0.17.2",
   "zensical==0.0.72",
   "zizmor==1.31.1",
 ]
@@ -22,3 +21,9 @@ line-ending = "lf"
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
+
+[tool.ty.environment]
+extra-paths = ["scripts"]
+
+[tool.ty.src]
+include = ["scripts", "tests"]
