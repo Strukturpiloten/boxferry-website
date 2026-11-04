@@ -27,6 +27,6 @@ jobs:
       (github.event_name == 'workflow_run' &&
       (github.event.workflow_run.event == 'pull_request' ||
       github.event.workflow_run.event == 'merge_group'))
-    uses: Strukturpiloten/boxferry/.github/workflows/shared-dependency-eligibility.yml@cec9496ab82452970400c1fd9dc83e6cd64d53a7 # automation-v1 interface v1
+    uses: Strukturpiloten/boxferry/.github/workflows/shared-dependency-eligibility.yml@6d4b6feda7c549b236915e37e4dd4ddbbd8b5a38 # automation-v1 interface v1
     with:
-      automation-sha: cec9496ab82452970400c1fd9dc83e6cd64d53a7
+      automation-sha: 6d4b6feda7c549b236915e37e4dd4ddbbd8b5a38
