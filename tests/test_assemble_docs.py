@@ -45,18 +45,18 @@ class AssemblyTests(unittest.TestCase):
     ) -> Path:
         duplicate_mapping = ""
         if duplicate:
-            duplicate_mapping = f'''\n[[repositories.documents]]
+            duplicate_mapping = f"""\n[[repositories.documents]]
 source = "docs/guide.md"
-destination = "{destination}"
-'''
+destination = {json.dumps(destination)}
+"""
         manifest = self.website / "documentation-sources.toml"
         rustdoc = ""
         if rustdoc_destination is not None:
-            rustdoc = f'''\n[repositories.rustdoc]
+            rustdoc = f"""\n[repositories.rustdoc]
 package = "compose-lens"
 crate = "compose_lens"
-destination = "{rustdoc_destination}"
-'''
+destination = {json.dumps(rustdoc_destination)}
+"""
         manifest.write_text(
             f'''schema-version = 1
 
@@ -71,8 +71,8 @@ revision = "{revision}"
 local-directories = ["../source"]
 
 [[repositories.documents]]
-source = "{source}"
-destination = "{destination}"
+source = {json.dumps(source)}
+destination = {json.dumps(destination)}
 {duplicate_mapping}{rustdoc}''',
             encoding="utf-8",
         )
@@ -95,14 +95,66 @@ destination = "{destination}"
         self.assertNotIn(str(self.root), json.dumps(metadata))
 
     def test_parent_traversal_and_absolute_destinations_are_rejected(self) -> None:
-        for destination in ("../escape.md", "/escape.md", "docs\\escape.md"):
+        for destination in (
+            "../escape.md",
+            "/escape.md",
+            "docs/../escape.md",
+            "docs\\escape.md",
+            "C:/escape.md",
+            "C:escape.md",
+        ):
             with self.subTest(destination=destination), self.assertRaises(AssemblyError):
                 load_manifest(self.write_manifest(destination=destination))
 
     def test_parent_traversal_and_absolute_sources_are_rejected(self) -> None:
-        for source in ("../secret", "/secret", "docs\\secret"):
+        for source in (
+            "../secret",
+            "/secret",
+            "docs/../secret",
+            "docs\\secret",
+            "C:/secret",
+            "C:secret",
+        ):
             with self.subTest(source=source), self.assertRaises(AssemblyError):
                 load_manifest(self.write_manifest(source=source))
+
+    def test_non_normalized_paths_are_rejected_before_pathlib_normalizes_them(self) -> None:
+        for value in ("", ".", "./docs/guide.md", "docs//guide.md", "docs/./guide.md", "docs/"):
+            for field in ("source", "destination"):
+                with self.subTest(field=field, value=value), self.assertRaises(AssemblyError):
+                    load_manifest(
+                        self.write_manifest(source=value)
+                        if field == "source"
+                        else self.write_manifest(destination=value)
+                    )
+
+    def test_control_characters_are_rejected_after_toml_decoding(self) -> None:
+        for value in (
+            "docs/escape\x1b.md",
+            "docs/line\nfeed.md",
+            "docs/tab\tname.md",
+            "docs/\x7f.md",
+        ):
+            for field in ("source", "destination"):
+                with (
+                    self.subTest(field=field, value=value),
+                    self.assertRaisesRegex(AssemblyError, "control characters"),
+                ):
+                    load_manifest(
+                        self.write_manifest(source=value)
+                        if field == "source"
+                        else self.write_manifest(destination=value)
+                    )
+
+    def test_valid_nested_posix_paths_are_preserved(self) -> None:
+        manifest = load_manifest(
+            self.write_manifest(
+                source="docs/nested/guide.md", destination="docs/nested/imported.md"
+            )
+        )
+        document = manifest.repositories[0].documents[0]
+        self.assertEqual(document.source.as_posix(), "docs/nested/guide.md")
+        self.assertEqual(document.destination.as_posix(), "docs/nested/imported.md")
 
     def test_duplicate_destinations_are_rejected(self) -> None:
         with self.assertRaisesRegex(AssemblyError, "duplicate documentation destination"):

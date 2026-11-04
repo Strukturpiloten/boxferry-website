@@ -26,20 +26,11 @@
     },
     {
       "customType": "regex",
-      "description": "Update directly pinned workflow tool versions",
+      "description": "Update explicitly pinned Node setup versions",
       "managerFilePatterns": ["/^\\.github/workflows/.*\\.yml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)\\n\\s+version: \"(?<currentValue>[^\"]+)\"",
         "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)\\n\\s+node-version: (?<currentValue>[^\\s]+)"
       ]
-    },
-    {
-      "customType": "regex",
-      "description": "Update the required uv CLI version",
-      "managerFilePatterns": ["/^pyproject\\.toml$/"],
-      "matchStrings": ["required-version = \"==(?<currentValue>[^\"]+)\""],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "astral-sh/uv"
     },
     {
       "customType": "regex",
@@ -50,15 +41,42 @@
       ],
       "currentValueTemplate": "main",
       "datasourceTemplate": "git-refs"
+    },
+    {
+      "customType": "regex",
+      "depNameTemplate": "Strukturpiloten/boxferry",
+      "datasourceTemplate": "github-digest",
+      "currentValueTemplate": "automation-v1",
+      "description": "Update the shared automation authority manifest",
+      "managerFilePatterns": ["/^\\.github/automation\\.json$/"],
+      "matchStrings": [
+        "(?<prefix>\"revision\"[ \\t]*:[ \\t]*\")(?<currentDigest>[a-f0-9]{40})(?<suffix>\")"
+      ]
+    },
+    {
+      "customType": "regex",
+      "depNameTemplate": "Strukturpiloten/boxferry",
+      "datasourceTemplate": "github-digest",
+      "currentValueTemplate": "automation-v1",
+      "description": "Update the eligibility service automation input",
+      "managerFilePatterns": ["/^\\.github/workflows/dependency-eligibility\\.yml$/"],
+      "matchStrings": [
+        "(?<prefix>(?:^|\\n)[ \\t]*automation-sha:[ \\t]*)(?<currentDigest>[a-f0-9]{40})"
+      ]
+    },
+    {
+      "customType": "regex",
+      "depNameTemplate": "Strukturpiloten/boxferry",
+      "datasourceTemplate": "github-digest",
+      "currentValueTemplate": "automation-v1",
+      "description": "Update the annotated immutable shared-source checkout",
+      "managerFilePatterns": ["/^\\.github/workflows/ci\\.yml$/"],
+      "matchStrings": [
+        "(?<prefix># renovate: datasource=github-digest depName=Strukturpiloten/boxferry currentValue=automation-v1\\n[ \\t]*ref:[ \\t]*)(?<currentDigest>[a-f0-9]{40})"
+      ]
     }
   ],
   "packageRules": [
-    {
-      "description": "Keep the required uv CLI and workflow versions together",
-      "matchDatasources": ["github-releases"],
-      "matchPackageNames": ["astral-sh/uv"],
-      "groupName": "uv toolchain"
-    },
     {
       "description": "Group repository Node development-tool updates",
       "matchManagers": ["npm"],
@@ -122,6 +140,23 @@
       "minimumReleaseAge": "0 days",
       "groupName": "documentation sources",
       "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": false
+    },
+    {
+      "description": "Bootstrap only: update shared automation pins atomically; common-preset adoption removes this temporary automerge hold",
+      "matchManagers": ["github-actions", "custom.regex"],
+      "matchDatasources": ["github-digest"],
+      "matchPackageNames": ["Strukturpiloten/boxferry"],
+      "matchFileNames": [
+        ".github/automation.json",
+        ".github/workflows/ci.yml",
+        ".github/workflows/dependency-eligibility.yml"
+      ],
+      "groupName": "Shared BoxFerry automation",
+      "minimumReleaseAge": "0 days",
+      "dependencyDashboardApproval": false,
+      "automerge": false,
       "automergeType": "pr",
       "platformAutomerge": false
     }

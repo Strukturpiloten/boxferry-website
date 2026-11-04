@@ -1,0 +1,40 @@
+{
+  "schema": 2,
+  "repository": "Strukturpiloten/boxferry-website",
+  "jobs": ["quality", "lockfile-release-age"],
+  "profile_jobs": {
+    "complete": ["quality", "lockfile-release-age"]
+  },
+  "public_documentation_root": "content/",
+  "full_documentation_roots": ["content/"],
+  "executable_documentation_roots": [],
+  "executable_documentation_paths": [],
+  "documentation_examples_manifest": null,
+  "path_profiles": {},
+  "local_commands": {
+    "complete": [["bash", "scripts/check-all.sh", "--check"]],
+    "full": [["bash", "scripts/check-all.sh", "--check"]]
+  },
+  "tasks": {
+    "complete-fix": {
+      "commands": [
+        ["env", "BOXFERRY_WEBSITE_SHARED_TOOLS=1", "bash", "scripts/check-all.sh", "--fix"]
+      ],
+      "timeout_seconds": 1200
+    },
+    "complete-check": {
+      "commands": [
+        ["env", "BOXFERRY_WEBSITE_SHARED_TOOLS=1", "bash", "scripts/check-all.sh", "--check"]
+      ],
+      "timeout_seconds": 1200
+    },
+    "build-site": {
+      "commands": [["env", "BOXFERRY_WEBSITE_SHARED_TOOLS=1", "bash", "scripts/build-site.sh"]],
+      "timeout_seconds": 1200
+    },
+    "serve": {
+      "commands": [["env", "BOXFERRY_WEBSITE_SHARED_TOOLS=1", "bash", "scripts/serve.sh"]],
+      "timeout_seconds": 7200
+    }
+  }
+}

@@ -16,6 +16,11 @@ case "${source_mode}" in
 esac
 
 cd -- "${repository_root}"
+
+if [[ "${BOXFERRY_WEBSITE_SHARED_TOOLS:-}" != 1 ]]; then
+  exec python3 "${repository_root}/scripts/shared-ci.py" run --task build-site \
+    --report-json "${repository_root}/target/build-site.json"
+fi
 uv sync --locked
 uv run --frozen python scripts/assemble_docs.py --source-mode "${source_mode}"
 uv run --frozen zensical build --clean --strict

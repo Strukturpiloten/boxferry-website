@@ -46,7 +46,7 @@ run_gate() {
     CHECK_ALL_TEST_LOG="${test_root}/${label}.commands" \
     CARGO_TARGET_DIR="${test_root}/target" \
     BOXFERRY_SEMVER_RELEASE_TYPE="" PODMAN_LENS_SEMVER_CHECK=0 \
-    BOXFERRY_WEBSITE_SOURCE_MODE=local \
+    BOXFERRY_WEBSITE_SOURCE_MODE=local BOXFERRY_WEBSITE_SHARED_TOOLS=1 \
     "${bash_executable}" "${test_root}/repository/scripts/check-all.sh" "$@" \
     > "${test_root}/${label}.output" 2>&1
 }
