@@ -6,6 +6,8 @@ on:
     branches:
       - main
   pull_request:
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
@@ -51,6 +53,8 @@ jobs:
               --repository-root "${GITHUB_WORKSPACE}" \
               --base "${BASE_SHA}" --tested "${TESTED_SHA}")"
           fi
+          # Complete-only first stage; selective policy activates after trusted-base adoption.
+          profile=full
           if [[ "${profile}" != full && "${profile}" != maintenance ]]; then
             echo '::error::Validation policy produced an invalid profile.'
             exit 1
@@ -69,41 +73,47 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          path: source
       - name: Install pinned Node.js toolchain
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # renovate: datasource=node-version depName=node
           node-version: 24.22.1
           cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Install pinned uv toolchain
-        if: needs.validation-plan.outputs.profile == 'full'
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+          cache-dependency-path: source/package-lock.json
+      - name: Check out immutable shared Python tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          enable-cache: true
-          # renovate: datasource=github-releases depName=astral-sh/uv
-          version: "0.13.5"
+          repository: Strukturpiloten/boxferry
+          # renovate: datasource=github-digest depName=Strukturpiloten/boxferry currentValue=automation-v1
+          ref: 322024da130587ba14ea9f7eb499e5f41a07e43d
+          path: _automation
+          persist-credentials: false
+      - name: Install canonical locked Python tooling
+        uses: ./_automation/.github/actions/shared-python # zizmor: ignore[self-repository] -- External SHA-pinned BoxFerry checkout; $/ would select this website repository.
       - name: Install checksum-pinned native file-quality tools
         if: needs.validation-plan.outputs.profile == 'full'
         run: |
           set -euo pipefail
           tool_dir="${RUNNER_TEMP}/boxferry-website-tools"
-          bash scripts/install-file-tools.sh "${tool_dir}"
+          bash source/scripts/install-file-tools.sh "${tool_dir}"
           printf '%s\n' "${tool_dir}" >> "${GITHUB_PATH}"
       - name: Install checksum-pinned Lychee for maintenance prose
         if: needs.validation-plan.outputs.profile == 'maintenance'
         run: |
           set -euo pipefail
           tool_dir="${RUNNER_TEMP}/boxferry-website-tools"
-          bash scripts/install-file-tools.sh "${tool_dir}" --lychee-only
+          bash source/scripts/install-file-tools.sh "${tool_dir}" --lychee-only
           printf '%s\n' "${tool_dir}" >> "${GITHUB_PATH}"
       - name: Run the complete deterministic repository gate
+        working-directory: source
         if: needs.validation-plan.outputs.profile == 'full'
         env:
           BOXFERRY_WEBSITE_FORMAT_MODE: check
           BOXFERRY_WEBSITE_SOURCE_MODE: locked
         run: ./scripts/check-all.sh
       - name: Check repository maintenance prose and local links
+        working-directory: source
         if: needs.validation-plan.outputs.profile == 'maintenance'
         run: bash scripts/check-maintenance-docs.sh
 
@@ -135,7 +145,7 @@ jobs:
 
           if [[ "${PLAN_RESULT}" != success ]] ||
              [[ "${QUALITY_RESULT}" != success ]] ||
-             { [[ "${PROFILE}" != full ]] && [[ "${PROFILE}" != maintenance ]]; }; then
+             [[ "${PROFILE}" != full ]]; then
             echo '::error::The planned website validation did not complete successfully.'
             exit 1
           fi

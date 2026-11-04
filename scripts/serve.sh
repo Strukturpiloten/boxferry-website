@@ -8,5 +8,10 @@ readonly repository_root
 
 cd -- "${repository_root}"
 
+if [[ "${BOXFERRY_WEBSITE_SHARED_TOOLS:-}" != 1 ]]; then
+  exec python3 "${repository_root}/scripts/shared-ci.py" run --task serve \
+    --report-json "${repository_root}/target/serve.json"
+fi
+
 ./scripts/build-site.sh
 exec uv run --frozen python -m http.server 8000 --directory site

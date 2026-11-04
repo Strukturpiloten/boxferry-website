@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tomllib
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 SCHEMA_VERSION = 1
@@ -131,8 +131,14 @@ def _required_string_list(table: dict[str, Any], key: str, label: str) -> tuple[
 def _safe_relative_path(value: str, label: str) -> PurePosixPath:
     if "\\" in value:
         raise AssemblyError(f"{label} must use forward slashes")
+    if any(ord(character) < 32 or ord(character) == 127 for character in value):
+        raise AssemblyError(f"{label} must not contain control characters")
     path = PurePosixPath(value)
-    if path.is_absolute() or not path.parts or any(part in {"", ".", ".."} for part in path.parts):
+    if (
+        path.is_absolute()
+        or PureWindowsPath(value).drive
+        or any(part in {"", ".", ".."} for part in value.split("/"))
+    ):
         raise AssemblyError(f"{label} must be a normalized relative path")
     return path
 

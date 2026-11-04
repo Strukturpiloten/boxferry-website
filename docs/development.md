@@ -26,19 +26,11 @@ assets, source pins, workflow files, dependencies, scripts, and uncertain compar
 complete check. This quick task is development feedback; it does not replace the required complete
 local gate before publishing a PR.
 
-On GitHub, a pull request uses its trusted base revision to choose the same maintenance profile.
-The stable `Format, lint, test, and build` check runs the selected validation steps, and `Required CI`
-requires the plan and check to succeed. A policy
-change itself runs full validation. Main branch pushes and manually dispatched CI always run the
-complete locked-source check. The production deployment workflow still builds and validates the
-exact selected revision before accessing the protected environment. The website's Markdown under
-`content/` is site input and always requires full validation.
-
-The maintenance job downloads only a checksum-verified Lychee binary into its runner temporary
-directory instead of compiling it with Cargo. A local warm run with an already installed Lychee
-took about 2.4 seconds; this does not include GitHub runner startup or a cold archive download.
-One isolated unprivileged download and install took 0.8 seconds on the development host. Hosted
-timing remains to be measured.
+During initial bootstrap, pull requests, merge queues, main and manual CI all run the complete
+locked site gate. The manifest, trusted service and conservative shared policy exist before a
+later stage enables shared selection and admission. Complete validation and preview enter the
+verified launcher for canonical uv; existing site dependencies remain locked here. Preview has
+a two-hour watchdog. Local quick feedback still does not replace the complete gate.
 
 Run the same complete task required before a pull request:
 
@@ -85,16 +77,10 @@ website revision pin.
 
 ## Clean checkout
 
-With Node.js 22 or newer and the exact uv version declared in `pyproject.toml` installed:
+With Node.js 22 or newer, Git and Python installed:
 
 ```console
-npm ci --ignore-scripts
-uv sync --locked
-uv run --frozen python scripts/assemble_docs.py --source-mode locked
-uv run --frozen zensical build --strict
-uv run --frozen python scripts/build_rustdoc.py --source-mode locked
-uv run --frozen python scripts/publish_ai_docs.py
-uv run --frozen python scripts/prepare_deployment.py
+./scripts/check-all.sh --check
 ```
 
 Locked assembly may access GitHub to obtain exact revisions declared in

@@ -39,15 +39,16 @@ If a change contradicts an accepted decision, update or supersede it in the same
 - Default to dark mode while retaining a user-selectable light mode.
 - Treat Zensical warnings as build failures.
 - Start every repository-owned complete YAML document with `---`.
-- Pin every GitHub Action to its full commit SHA and append its exact release tag as a comment.
+- Pin external GitHub Actions to full commit SHAs with exact release-tag comments. Internal shared
+  automation follows the reviewed full-SHA bootstrap exception in
+  [ADR 0005](docs/decisions/0005-shared-validation-and-dependency-admission.md).
 
 ## Canonical development commands
 
 ```shell
 ./scripts/check-all.sh
 ./scripts/serve.sh
-uv run --frozen python scripts/assemble_docs.py --source-mode local
-uv run --frozen zensical build --strict
+./scripts/build-site.sh
 ```
 
 The complete check formats owned files before validating them. Any source, test, configuration, or

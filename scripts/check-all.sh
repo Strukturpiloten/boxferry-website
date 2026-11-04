@@ -42,6 +42,16 @@ case "${format_mode}" in
 esac
 readonly format_mode
 
+if [[ "${BOXFERRY_WEBSITE_SHARED_TOOLS:-}" != 1 ]]; then
+  if [[ "${format_mode}" == fix ]]; then
+    task=complete-fix
+  else
+    task=complete-check
+  fi
+  exec python3 scripts/shared-ci.py run --task "${task}" \
+    --report-json "${repository_root}/target/complete-site-validation.json"
+fi
+
 source_mode="${BOXFERRY_WEBSITE_SOURCE_MODE:-local}"
 case "${source_mode}" in
   local | locked) ;;

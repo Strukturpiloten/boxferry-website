@@ -22,6 +22,3 @@ line-ending = "lf"
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
-
-[tool.uv]
-required-version = "==0.13.5"

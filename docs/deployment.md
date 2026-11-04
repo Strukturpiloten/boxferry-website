@@ -236,6 +236,18 @@ A successful normal deployment verifies:
 
 The first publication is complete only after this normal deployment succeeds.
 
+## Historical rebuild tooling
+
+An explicit `deploy` revision must still belong to `main` history and passes its complete locked
+site gate. A manifest-bearing revision selects its own immutable shared toolchain. Pre-adoption
+revisions retain their original Python metadata and are supported only when their inert
+`pyproject.toml` declares exactly uv 0.13.5. The trusted workflow revision reads that declaration
+and checks the historical Linux x86_64 archive against `deployment/historical-uv.json`; missing or
+unknown constraints fail closed. The historical integrity record is intentionally excluded from
+routine dependency upgrades. No selected-source script runs to discover a version.
+
+Rollback continues to promote a retained server artifact; it does not rebuild an old checkout.
+
 ## Routine deployment
 
 For ordinary website changes:

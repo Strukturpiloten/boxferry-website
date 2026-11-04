@@ -119,26 +119,56 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.request.outputs.revision }}
+          path: source
       - name: Install pinned Node.js toolchain
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # renovate: datasource=node-version depName=node
           node-version: 24.22.1
           cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Install pinned uv toolchain
+          cache-dependency-path: source/package-lock.json
+      - name: Check out trusted deployment tooling policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: _deployment_policy
+          persist-credentials: false
+      - name: Select tooling from approved source metadata
+        id: toolchain
+        env:
+          SOURCE_REVISION: ${{ needs.request.outputs.revision }}
+        run: |
+          python3 _deployment_policy/scripts/select_deployment_toolchain.py \
+            --source-root source --source-revision "${SOURCE_REVISION}" \
+            --historical-record _deployment_policy/deployment/historical-uv.json \
+            --github-output "${GITHUB_OUTPUT}" --summary "${GITHUB_STEP_SUMMARY}"
+      - name: Check out the selected source's immutable shared tooling
+        if: steps.toolchain.outputs.mode == 'canonical'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Strukturpiloten/boxferry
+          ref: ${{ steps.toolchain.outputs.automation_sha }}
+          path: _automation
+          persist-credentials: false
+      - name: Install selected canonical locked Python tooling
+        if: steps.toolchain.outputs.mode == 'canonical'
+        uses: ./_automation/.github/actions/shared-python # zizmor: ignore[self-repository] -- External SHA-pinned BoxFerry checkout; $/ would select this website repository.
+      - name: Install checksum-verified historical uv from its original declaration
+        if: steps.toolchain.outputs.mode == 'legacy'
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version-file: source/pyproject.toml
+          checksum: ${{ steps.toolchain.outputs.legacy_checksum }}
+          download-from-astral-mirror: false
           enable-cache: true
-          # renovate: datasource=github-releases depName=astral-sh/uv
-          version: "0.13.5"
       - name: Install checksum-pinned native file-quality tools
         run: |
           set -euo pipefail
           tool_dir="${RUNNER_TEMP}/boxferry-website-tools"
-          bash scripts/install-file-tools.sh "${tool_dir}"
+          bash source/scripts/install-file-tools.sh "${tool_dir}"
           printf '%s\n' "${tool_dir}" >> "${GITHUB_PATH}"
       - name: Build and validate exact locked documentation revisions
+        working-directory: source
         env:
           BOXFERRY_WEBSITE_FORMAT_MODE: check
           BOXFERRY_WEBSITE_SOURCE_MODE: locked
@@ -147,7 +177,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: boxferry-site-${{ needs.request.outputs.revision }}
-          path: site/
+          path: source/site/
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 7
