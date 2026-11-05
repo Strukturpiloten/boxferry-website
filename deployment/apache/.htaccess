@@ -19,7 +19,7 @@ AddCharset UTF-8 .css .html .js .json .md .mjs .svg .toml .txt
 </Files>
 
 <IfModule mod_headers.c>
-  Header always set Content-Security-Policy "base-uri 'self'; connect-src 'self'; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; manifest-src 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
+  Header always set Content-Security-Policy "base-uri 'self'; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; default-src 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: https://www.google-analytics.com https://region1.google-analytics.com; manifest-src 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com/gtag/; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
   Header always set Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Strict-Transport-Security "max-age=31536000"

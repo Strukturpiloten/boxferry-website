@@ -44,7 +44,7 @@ Run the same complete task required before a pull request:
 ```
 
 The task formats owned files, checks spelling, validates every supported file type, runs Python
-tests, regenerates token-derived brand assets, assembles the documentation, performs a strict
+tests and Node consent-lifecycle tests, regenerates token-derived brand assets, assembles the documentation, performs a strict
 Zensical build, generates first-party Lens Rustdoc and authored Markdown alternatives, checks
 required public routes and assets, and
 prepares the Apache deployment artifact, validates its privacy and server-policy boundaries, and

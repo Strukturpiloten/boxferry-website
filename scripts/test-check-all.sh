@@ -34,7 +34,7 @@ esac
 MOCK
 chmod +x "${test_root}/bin/mock"
 for tool in actionlint bash cargo cargo-deny cargo-llvm-cov cargo-semver-checks cspell curl git \
-  hadolint jq lychee markdownlint-cli2 npm prettier python3 rustup shellcheck shfmt tombi uv zizmor; do
+  hadolint jq lychee markdownlint-cli2 node npm prettier python3 rustup shellcheck shfmt tombi uv zizmor; do
   ln -s mock "${test_root}/bin/${tool}"
 done
 
@@ -74,6 +74,8 @@ else
   assert_contains check "uv run --frozen python scripts/generate_brand_assets.py --check"
   assert_contains check "python3 scripts/shared-ci.py run --task python-quality --report-json target/python-quality.json"
   assert_contains check "python3 scripts/shared-ci.py run --task automation-policy --report-json target/automation-policy.json"
+  assert_contains check "node --test tests/analytics.test.mjs"
+  assert_contains fix "node --test tests/analytics.test.mjs"
   # The explicit flag wins over the website's existing environment default.
   export BOXFERRY_WEBSITE_FORMAT_MODE=check
   run_gate explicit_fix --fix
@@ -99,11 +101,18 @@ run_gate extra --check --fix || status=$?
 [[ "${status}" == 2 && ! -s "${test_root}/extra.commands" ]]
 
 # A failed check must stop the gate and preserve its exit status in either mode.
-export CHECK_ALL_TEST_FAIL=actionlint
-for mode in fix check; do
-  status=0
-  run_gate failure "--${mode}" || status=$?
-  [[ "${status}" == 17 ]]
-  [[ "$(tail -n 1 "${test_root}/failure.commands")" == "actionlint" ]]
+for failed_tool in actionlint node; do
+  export CHECK_ALL_TEST_FAIL="${failed_tool}"
+  for mode in fix check; do
+    status=0
+    run_gate failure "--${mode}" || status=$?
+    [[ "${status}" == 17 ]]
+    if [[ "${failed_tool}" == node ]]; then
+      expected="node --test tests/analytics.test.mjs"
+    else
+      expected=actionlint
+    fi
+    [[ "$(tail -n 1 "${test_root}/failure.commands")" == "${expected}" ]]
+  done
 done
 printf 'Complete gate mode regression tests passed.\n'

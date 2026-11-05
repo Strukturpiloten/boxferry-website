@@ -40,5 +40,6 @@ before a consumer arbitration board.
 
 ## External links
 
-This website links to third-party websites. Their respective operators are responsible for their
-content. BoxFerry does not load content from those websites before a visitor follows a link.
+This website links to third-party websites, whose operators are responsible for their content.
+Ordinary external destinations are not embedded. Optional Google Analytics loads only with consent,
+as described in the [Privacy Policy](../privacy-policy/).

@@ -42,7 +42,8 @@ variant is missing or stale.
 
 Small Zensical partial overrides own the shared header and footer integrations. They add local,
 passive GitHub and Strukturpiloten marks, English website-owned legal pages, and a first-party
-company contact link without loading remote images, scripts, fonts, or tracking resources. The
+company contact link. Native Zensical consent and a local GA4 lifecycle adapter are described in
+[`analytics.md`](analytics.md). Remote fonts and images remain disabled. The
 Strukturpiloten rocket is a monochrome vector reconstruction of the company favicon and inherits
 the active color scheme.
 
@@ -103,9 +104,15 @@ Mappings reject absolute paths, parent traversal, symlinks, duplicate destinatio
 repositories. Generated metadata contains repository URLs and pinned revisions only. It never
 contains checkout paths, environment values, credentials, or source-control authentication.
 
-Production uses no remote fonts, scripts, analytics, or tracking. Apache denies the private release
-manifest and adds a same-origin content policy, HSTS, framing denial, MIME protection, referrer
-policy, and capability restrictions. Deployment SSH host identity is pinned, private keys remain
+Remote fonts remain disabled. Optional GA4 requires a current explicit opt-in, the production
+origin and an enabled collection setting; no Google request precedes these gates. The native
+Zensical banner owns choices, with a permanent footer settings link. A local adapter expires
+preferences after 180 days, handles withdrawal and emits only query-free canonical page views.
+Collection remains disabled pending confirmation of the Google account settings.
+
+Apache denies the private release manifest and adds a content policy with narrowly scoped Google
+Analytics exceptions, HSTS, framing denial, MIME protection, referrer policy, and capability
+restrictions. Deployment SSH host identity is pinned, private keys remain
 environment secrets, and neither forced key grants an interactive shell.
 
 Public BoxFerry pages also pass a small content contract: one level-one heading, no placeholder

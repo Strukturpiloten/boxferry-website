@@ -10,6 +10,7 @@ import sys
 import tomllib
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 APACHE_POLICY = ROOT / "deployment" / "apache" / ".htaccess"
@@ -74,7 +75,9 @@ REQUIRED_ROUTES = (
     "docs/development/contributing/index.html",
     "docs/development/releases/index.html",
 )
+ANALYTICS_ASSET = "assets/javascripts/analytics.js"
 REQUIRED_ASSETS = (
+    ANALYTICS_ASSET,
     "assets/images/favicon.svg",
     "assets/images/brand/boxferry-mark.svg",
     "assets/images/brand/boxferry-wordmark.svg",
@@ -145,6 +148,87 @@ class _LinkTargets(HTMLParser):
             href = dict(attrs).get("href")
             if href is not None:
                 self.targets.add(href)
+
+
+class _ConsentPage(HTMLParser):
+    """Read actual native form controls and script resources, never escaped examples."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.tags: list[tuple[str, dict[str, str | None]]] = []
+        self.controls: list[tuple[str, dict[str, str | None]]] = []
+        self.forms = 0
+        self.in_consent = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        self.tags.append((tag, attributes))
+        if tag == "form":
+            self.in_consent = attributes.get("name") == "consent"
+            self.forms += int(self.in_consent)
+        if self.in_consent and tag in {"input", "button"}:
+            self.controls.append((tag, attributes))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "form":
+            self.in_consent = False
+
+
+def _verify_consent_page(content: str, route: Path, project: dict) -> None:
+    page = _ConsentPage()
+    page.feed(content)
+    origin = project["site_url"].rstrip("/")
+    page_url = f"{origin}/{route.as_posix()}"
+    scripts = [attrs for tag, attrs in page.tags if tag == "script"]
+    if any(
+        urlsplit(urljoin(page_url, attrs["src"])).netloc != urlsplit(origin).netloc
+        for attrs in scripts
+        if attrs.get("src")
+    ):
+        raise SiteVerificationError(f"static remote script is forbidden: {route}")
+    if any(route.is_relative_to(Path("docs/api") / slug) for slug, _ in RUSTDOC_ROUTES):
+        return
+    inputs = [attrs for tag, attrs in page.controls if tag == "input"]
+    analytics_inputs = [attrs for attrs in inputs if attrs.get("name") == "analytics"]
+    if (
+        page.forms != 1
+        or len(analytics_inputs) != 1
+        or analytics_inputs[0].get("type") != "checkbox"
+        or "checked" in analytics_inputs[0]
+        or "disabled" in analytics_inputs[0]
+        or any(attrs.get("name") == "github" for attrs in inputs)
+        or not any(attrs.get("data-md-component") == "consent" for _, attrs in page.tags)
+    ):
+        raise SiteVerificationError(f"native unchecked Analytics consent is missing: {route}")
+    buttons = [attrs for tag, attrs in page.controls if tag == "button"]
+    if any(
+        not any(
+            attrs.get("type", "submit") == kind
+            and "md-button--primary" in (attrs.get("class") or "").split()
+            for attrs in buttons
+        )
+        for kind in ("submit", "reset")
+    ):
+        raise SiteVerificationError(f"native accept/reject controls are missing: {route}")
+    if not any(tag == "a" and attrs.get("href") == "#__consent" for tag, attrs in page.tags):
+        raise SiteVerificationError(f"Privacy settings link is missing: {route}")
+    providers = [attrs for attrs in scripts if attrs.get("id") == "__analytics"]
+    analytics = project["extra"]["analytics"]
+    expected = {
+        "data-measurement-id": analytics["property"],
+        "data-production-origin": origin,
+        "data-enabled": str(analytics["enabled"]).lower(),
+        "data-policy-version": analytics["policy_version"],
+        "data-consent-days": str(analytics["consent_days"]),
+    }
+    if (
+        len(providers) != 1
+        or any(providers[0].get(key) != value for key, value in expected.items())
+        or urljoin(page_url, providers[0].get("src") or "") != f"{origin}/{ANALYTICS_ASSET}"
+        or "async" in providers[0]
+        or "defer" in providers[0]
+    ):
+        raise SiteVerificationError(f"first-party consent provider is missing or stale: {route}")
 
 
 class _HomepageFormats(HTMLParser):
@@ -299,7 +383,10 @@ def verify_site(site_directory: Path) -> None:
     _verify_rule_routes_and_search(site)
 
     with (ROOT / "zensical.toml").open("rb") as handle:
-        formats = tomllib.load(handle)["project"]["extra"]["formats"]
+        project = tomllib.load(handle)["project"]
+    formats = project["extra"]["formats"]
+    if (site / ANALYTICS_ASSET).read_bytes() != (ROOT / "content" / ANALYTICS_ASSET).read_bytes():
+        raise SiteVerificationError("first-party Analytics asset is stale")
     _verify_homepage_formats(site, formats)
 
     homepage_links = _LinkTargets()
@@ -373,6 +460,8 @@ def verify_site(site_directory: Path) -> None:
         }:
             continue
         content = path.read_text(encoding="utf-8", errors="replace")
+        if path.suffix == ".html":
+            _verify_consent_page(content, path.relative_to(site), project)
         for fragment in FORBIDDEN_FRAGMENTS:
             if fragment in content:
                 raise SiteVerificationError(

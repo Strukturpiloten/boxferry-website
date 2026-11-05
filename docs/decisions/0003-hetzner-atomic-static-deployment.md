@@ -1,6 +1,6 @@
 # 0003: Hetzner atomic static deployment
 
-- Status: Accepted; automatic triggering partially superseded by [0006](0006-validated-main-publication.md)
+- Status: Accepted; automatic triggering amended by [0006](0006-validated-main-publication.md); browser policy amended by [0007](0007-opt-in-analytics.md)
 - Date: 2026-08-23
 
 ## Context
@@ -33,7 +33,8 @@ bootstrap, then require the normal verified deployment path.
 
 Copy a tracked `.htaccess` policy into every generated release. It owns directory-index behavior,
 static content types, security headers, cache revalidation, release-manifest denial, and the
-same-origin browser policy. Do not run PHP or a documentation build on the webserver. Do not use Git
+same-origin browser policy, with the opt-in Analytics exceptions accepted in
+[0007](0007-opt-in-analytics.md). Do not run PHP or a documentation build on the webserver. Do not use Git
 as an artifact transport and do not commit generated site output.
 
 Store private keys only as protected GitHub environment secrets. Derive and print the public keys

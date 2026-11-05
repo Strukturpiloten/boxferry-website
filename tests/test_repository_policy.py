@@ -375,7 +375,11 @@ class RepositoryPolicyTests(unittest.TestCase):
             extra = tomllib.load(handle)["project"]["extra"]
 
         self.assertEqual(
-            {key: value for key, value in extra.items() if key != "formats"},
+            {
+                key: value
+                for key, value in extra.items()
+                if key not in {"formats", "analytics", "consent"}
+            },
             {
                 "contact_url": (
                     "https://www.strukturpiloten.de/kontakt?utm_source=boxferry.dev"
@@ -421,7 +425,13 @@ class RepositoryPolicyTests(unittest.TestCase):
             "retention setting in the hosting account",
             "seven days for Apache access and error logs",
             "encrypted backups",
-            "does not set cookies",
+            "set no Analytics cookies",
+            "180 days",
+            "**2 months**",
+            "**14 months**",
+            "Privacy settings",
+            "Article 6(1)(a)",
+            "outside the EEA",
             "local storage",
             "Section 25(2)(2)",
             "Article 21 GDPR",
@@ -456,7 +466,42 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertIn(
             "These provider defaults do not establish the current setting", pages["privacy-policy"]
         )
-        self.assertIn("Last updated: 6 October 2026", pages["privacy-policy"])
+        self.assertIn("Last updated: 5 November 2026", pages["privacy-policy"])
+
+    def test_native_consent_has_explicit_unchecked_analytics_and_rejection(self) -> None:
+        with (ROOT / "zensical.toml").open("rb") as handle:
+            extra = tomllib.load(handle)["project"]["extra"]
+        self.assertEqual(extra["analytics"]["provider"], "google")
+        self.assertEqual(extra["analytics"]["property"], "G-TX06VP39B2")
+        self.assertIsInstance(extra["analytics"]["enabled"], bool)
+        self.assertEqual(extra["analytics"]["consent_days"], 180)
+        self.assertTrue(extra["analytics"]["policy_version"])
+        self.assertEqual(extra["consent"]["actions"], ["accept", "reject"])
+        self.assertFalse(extra["consent"]["cookies"]["analytics"]["checked"])
+        self.assertFalse(extra["consent"]["cookies"]["github"])
+        self.assertIn("/privacy-policy/", extra["consent"]["description"])
+
+    def test_analytics_csp_exception_preserves_other_restrictions(self) -> None:
+        policy = (ROOT / "deployment/apache/.htaccess").read_text(encoding="utf-8")
+        match = re.search(r'Content-Security-Policy "([^"\n]+)"', policy)
+        self.assertIsNotNone(match)
+        assert match is not None
+        directives = {
+            words[0]: words[1:] for directive in match[1].split(";") if (words := directive.split())
+        }
+        hosts = ["https://www.google-analytics.com", "https://region1.google-analytics.com"]
+        self.assertEqual(
+            directives["script-src"],
+            ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com/gtag/"],
+        )
+        self.assertEqual(directives["connect-src"], ["'self'", *hosts])
+        self.assertEqual(directives["img-src"], ["'self'", "data:", *hosts])
+        self.assertEqual(directives["default-src"], ["'none'"])
+        self.assertEqual(directives["frame-ancestors"], ["'none'"])
+        self.assertEqual(directives["object-src"], ["'none'"])
+        self.assertEqual(directives["font-src"], ["'self'"])
+        self.assertNotIn("unsafe-eval", match[1])
+        self.assertNotIn("*", match[1])
 
     def test_custom_company_icon_is_local_monochrome_and_passive(self) -> None:
         icon = ROOT / "overrides" / ".icons" / "strukturpiloten" / "rocket.svg"

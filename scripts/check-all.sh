@@ -10,7 +10,7 @@ cd -- "${repository_root}"
 
 current_step="preflight"
 step=0
-readonly total_steps=20
+readonly total_steps=21
 
 fail() {
   printf 'BoxFerry website local validation failed: %s\n' "$1" >&2
@@ -59,7 +59,7 @@ case "${source_mode}" in
 esac
 readonly source_mode
 
-bootstrap_tools=(git npm uv)
+bootstrap_tools=(git node npm uv)
 for tool in "${bootstrap_tools[@]}"; do
   command -v "${tool}" > /dev/null 2>&1 || fail "missing required tool: ${tool}"
 done
@@ -121,6 +121,7 @@ run_step "Lint and type check Python" python3 scripts/shared-ci.py run --task py
 run_step "Check effective shared website policy" python3 scripts/shared-ci.py run --task automation-policy \
   --report-json target/automation-policy.json
 run_step "Run repository tests" uv run --frozen python -m unittest discover -s tests -v
+run_step "Test opt-in Analytics lifecycle" node --test tests/analytics.test.mjs
 run_step "Assemble documentation" uv run --frozen python scripts/assemble_docs.py \
   --source-mode "${source_mode}"
 run_step "Build the static site with warnings denied" uv run --frozen zensical build --clean --strict

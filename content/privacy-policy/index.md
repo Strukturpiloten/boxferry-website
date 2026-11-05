@@ -3,10 +3,9 @@ title: Privacy Policy
 description: How personal data is processed when visiting the BoxFerry website
 ---
 
-Last updated: 6 October 2026
+Last updated: 5 November 2026
 
-This policy explains how personal data is processed when you visit `boxferry.dev`. It is designed
-for this static website and does not describe unrelated processing on external websites.
+This policy covers `boxferry.dev`, including its optional consent-controlled analytics.
 
 ## Controller
 
@@ -26,92 +25,87 @@ Represented by its partners: Frauke Beckert and Martin Beckert.
 
 ## Hosting and server logs
 
-The website is hosted on a server in Germany provided by Hetzner Online GmbH, Industriestr. 25,
-91710 Gunzenhausen, Germany. Hetzner acts as a processor where it processes personal data on our
-behalf.
+Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Germany, hosts this website in Germany
+and acts as our processor. Server logs may contain IP addresses, request times and addresses,
+transferred volume, response status, referrers, and browser/operating-system information.
+We use these data to deliver, secure and maintain the website under Article 6(1)(f) GDPR.
 
-When the website is requested, the web server may record technical data needed to deliver and
-protect the service. A log entry can contain:
+Routine deletion follows the retention setting in the hosting account.
+[Hetzner documents a default of seven days for Apache access and error logs](https://docs.hetzner.com/general/company-and-policy/data-protection-at-hetzner/)
+and encrypted backups retained for 14 days. These provider defaults do not establish the current setting
+of this account. Incident or legal-claim records may be retained until the matter and applicable
+retention obligations end.
 
-- the requesting IP address;
-- the date and time of the request;
-- the requested address and transferred data volume;
-- the response status;
-- the referring page, when supplied by the browser; and
-- browser and operating-system information contained in the user-agent header.
+## Browser storage and search
 
-We process these data to deliver the website, maintain availability, diagnose technical failures,
-and detect or investigate abuse. The legal basis is our legitimate interest in providing a secure
-and reliable public website under Article 6(1)(f) GDPR.
+Your browser's local storage remembers your selected color scheme and consent preferences. The consent record
+contains your choice, notice version and timestamps, not a separate visitor identifier. Choices
+expire after 180 days; a changed analytics notice can require a new choice sooner. This storage
+provides your requested preferences under Section 25(2)(2) TDDDG. You can clear it in your browser.
 
-Routine Apache log deletion follows the retention setting in the hosting account.
-[Hetzner documents a default of seven days for Apache access and error logs](https://docs.hetzner.com/general/company-and-policy/data-protection-at-hetzner/);
-this setting can be changed in konsoleH. Hetzner separately documents encrypted backups retained
-for 14 days. These provider defaults do not establish the current setting of an individual
-hosting account. Entries needed for a specific security incident or legal claim may be retained
-until the investigation or claim is concluded and any applicable retention obligation has ended.
+Documentation search runs locally. Search terms are not sent to us or an external search provider.
 
-## Browser storage, cookies, and search
+## Optional Google Analytics
 
-The website does not set cookies and does not use analytics, advertising, profiling, fingerprinting,
-or cross-site tracking.
+Google Analytics loads only when collection is enabled and you select its unchecked option and
+accept. Before consent, after rejection, or while collection is disabled, we load no Google tag,
+set no Analytics cookies and send no Analytics measurements or consent pings. Rejecting does not
+restrict the website.
 
-The site stores your selected color scheme in local storage in your browser. This value remains
-on your device, is not sent to us, and can be removed through your browser settings. This access is strictly necessary to
-provide the preference requested by the visitor and therefore does not require consent under
-Section 25(2)(2) of the German Telecommunications Digital Services Data Protection Act (TDDDG).
+With consent, Analytics can process pseudonymous cookie identifiers, published page addresses and
+titles, referring website origins, and technical browser/device and approximate-location data.
+Google also receives your IP address when your browser contacts its servers.
+Our integration removes address queries and fragments and does not send search terms or form
+contents. It disables Google Signals and advertising personalization and denies advertising
+storage and advertising-data consent. We do not configure cross-domain visitor linking.
 
-Documentation search runs locally in your browser against an index delivered with the website.
-Search terms are not sent to BoxFerry, Strukturpiloten, or an external search provider.
+The first-party cookies `_ga` and `_ga_TX06VP39B2` distinguish browsers and sessions. We configure
+them for up to 180 days without extending expiry on each visit; browsers may expire them sooner.
+The property's event-data retention is **2 months**, and user-data retention is **14 months**.
+These settings do not govern standard aggregated reports. Cookie lifetime and data retention are
+separate controls.
+
+The legal basis is your consent under Article 6(1)(a) and Article 7 GDPR and Section 25(1) TDDDG.
+Use **Privacy settings** in the footer to change or withdraw it at any time. Withdrawal stops
+future collection and removes accessible Analytics cookies. It does not undo earlier lawful
+processing or automatically erase records already held by Google; you can exercise your rights
+through the controller contact above.
+
+## Recipients and international transfers
+
+Hetzner can access hosting data as our processor. Consented Analytics can involve Google Ireland
+Limited and Google LLC, including processing outside the EEA, notably in the United States.
+Google describes the applicable contractual terms and transfer safeguards in its
+[Analytics data-processing terms](https://support.google.com/analytics/answer/3379636?hl=en)
+and [data-transfer frameworks](https://policies.google.com/privacy/frameworks).
+Google LLC identifies its certification under the EU–US Data Privacy Framework for covered transfers.
+These safeguards do not replace your consent. We do not sell personal data.
 
 ## External links and contact
 
-The GitHub, Strukturpiloten, Contact, Hetzner, and Zensical links are ordinary external links. No
-connection to those services is made by this website until you follow a link. The destination then
-processes data under its own privacy policy.
+Ordinary GitHub, Strukturpiloten and other external links are not embedded services; following a
+link opens a separate interaction with that provider. Optional Analytics is the consent-controlled
+exception described above.
 
-The BoxFerry website has no contact form. The Contact link opens the Strukturpiloten website. If you
-contact Strukturpiloten by form, email, or telephone, the information you provide is processed to
-answer the request. The legal basis is Article 6(1)(b) GDPR for contractual or pre-contractual
-requests and Article 6(1)(f) GDPR for other requests. Contact data are deleted when the request has
-been resolved unless statutory retention duties or the establishment, exercise, or defense of legal
-claims require longer storage.
-
-## Recipients and transfers
-
-Server-log data may be available to Hetzner as our hosting processor. Personal data are otherwise
-disclosed only when this is necessary to operate the service, comply with a legal obligation, or
-establish, exercise, or defend legal claims. We do not sell personal data.
-
-The website itself does not transfer personal data outside the European Economic Area. Following an
-external link, including a link to GitHub, is a separate interaction with that provider.
+This website has no contact form. If you contact Strukturpiloten by its external form, email or
+telephone, we use your information to answer. Article 6(1)(b) GDPR applies to contractual or
+pre-contractual requests; Article 6(1)(f) applies to other enquiries. We delete resolved enquiries
+unless retention duties or legal claims require longer storage.
 
 ## Your rights
 
-Subject to the conditions in the GDPR, you may request:
+Subject to the GDPR's conditions, you may request access (Article 15), rectification (16), erasure
+(17), restriction (18), portability (20), and information about recipients of corrected, erased or
+restricted data (19). You may withdraw consent as described above.
 
-- access to your personal data under Article 15;
-- rectification under Article 16;
-- erasure under Article 17;
-- restriction of processing under Article 18;
-- data portability under Article 20; and
-- information about recipients of corrected or deleted data under Article 19.
+Under Article 21 GDPR, you may object on grounds relating to your situation to processing based on
+Article 6(1)(f). We stop unless compelling legitimate grounds or legal claims justify continuing.
 
-Under Article 21 GDPR, you may object on grounds relating to your particular situation to processing
-based on Article 6(1)(f). We will then stop processing the affected data unless compelling legitimate
-grounds override your interests, rights, and freedoms, or the processing is required for legal
-claims.
-
-You may lodge a complaint with a supervisory authority, in particular in the EU member state of
-your habitual residence, workplace, or the alleged infringement. The supervisory authority
-responsible for the controller is the
+You may complain to a supervisory authority, particularly where you live, work or allege an
+infringement. Our competent authority is the
 [State Commissioner for Data Protection of Lower Saxony](https://www.lfd.niedersachsen.de/).
 
-## Security and policy changes
+## Security and updates
 
-The production website uses TLS encryption. No internet transmission or storage system can provide
-absolute security, but access and processing are limited to what is necessary for the purposes
-described above.
-
-We update this policy when the website, its hosting, or applicable legal requirements change. The
-current version is published on this page with its revision date.
+We use TLS and limit access to what is necessary. No internet service is absolutely secure.
+We update this policy when processing changes and publish its revision date above.

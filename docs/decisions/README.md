@@ -11,3 +11,4 @@ relevant decision rather than silently changing the implementation.
 | [0004](0004-signal-identity-and-format-growth.md)          | Accepted           | Signal identity and scalable format discovery                |
 | [0005](0005-shared-validation-and-dependency-admission.md) | Accepted           | Shared validation and dependency admission                   |
 | [0006](0006-validated-main-publication.md)                 | Accepted           | Publish validated current main automatically                 |
+| [0007](0007-opt-in-analytics.md)                           | Accepted           | Native consent and optional GA4                              |

@@ -162,5 +162,31 @@ label = "Quadlet"
 description = "Start with Quadlet files and choose an output format."
 guide = "docs/guides/quadlet-input/"
 
+[project.extra.analytics]
+provider = "google"
+property = "G-TX06VP39B2"
+# Collection stays off until the GA4 account settings are confirmed; see docs/analytics.md.
+enabled = false
+policy_version = "2026-11-05-ga4"
+consent_days = 180
+
+[project.extra.consent]
+title = "Cookie preferences"
+description = """
+  Optional Google Analytics can measure page visits with your permission. To allow it,
+  select Google Analytics and choose Accept. Reject keeps Analytics off and leaves the
+  website usable. Google may process data in the United States. You can change your
+  choice using Privacy settings in the footer.
+  <a href="/privacy-policy/">Read the Privacy Policy</a>.
+"""
+actions = ["accept", "reject"]
+
+[project.extra.consent.cookies]
+github = false
+
+[project.extra.consent.cookies.analytics]
+name = "Google Analytics (optional)"
+checked = false
+
 [project.plugins.offline]
 enabled = false
