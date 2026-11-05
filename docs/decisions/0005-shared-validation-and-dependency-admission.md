@@ -1,6 +1,6 @@
 # 0005: Shared validation and dependency admission
 
-- Status: Accepted
+- Status: Accepted; publication triggering partially superseded by [0006](0006-validated-main-publication.md)
 - Date: 2026-11-03
 
 ## Decision
@@ -28,3 +28,5 @@ deployment remains a separately requested operator action under ADR 0003.
 Before the first automation release tag, the shared infrastructure exception in BoxFerry ADR 0092
 permits a reviewed full commit SHA with an honest bootstrap comment. It grants no release or
 deployment authority. Rollback restores the previous reviewed manifest, workflows and preset SHA.
+
+The publication separation above is superseded by [0006](0006-validated-main-publication.md). Dependency admission and exact-candidate validation remain unchanged.

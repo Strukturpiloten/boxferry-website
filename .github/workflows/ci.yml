@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
 
 jobs:
   validation-plan:
@@ -190,3 +190,17 @@ jobs:
             --automation-sha "${AUTOMATION_SHA}" \
             --plan-json "${PLAN_JSON}" --needs-json "${NEEDS_JSON}" \
             --summary "${GITHUB_STEP_SUMMARY}"
+
+  publish-site:
+    name: Publish validated website
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.pr-gate.result == 'success'
+    needs: [pr-gate]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy.yml # zizmor: ignore[self-repository] -- Same-commit reusable workflow; pinned actionlint 1.7.12 lacks $/ support.
+    with:
+      operation: deploy
+      revision: ${{ github.sha }}
+      automatic: true

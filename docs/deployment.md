@@ -3,8 +3,9 @@
 BoxFerry publishes a static Zensical site to Hetzner. GitHub Actions builds every release; the
 server only stores and serves generated HTML, JavaScript, CSS, images, JSON, text, and Rustdoc.
 
-Push-triggered `CI` runs on `main` validate the complete site but do not publish it. After bootstrap,
-an operator starts the protected `Production deployment` workflow on `main` to publish an exact
+After bootstrap, main push CI calls the protected reusable `Production deployment` workflow
+automatically after its required validation gate succeeds. It publishes only the exact tested commit while
+that revision remains current main. Operators can also start the workflow on `main` to publish an exact
 revision. Pull-request and manually dispatched CI runs also do not publish.
 
 ## Choose the right operation
@@ -57,11 +58,12 @@ In the repository, open **Settings → Environments → New environment** and cr
 Configure the environment to:
 
 1. allow deployments only from `main`;
-2. choose whether each manually requested publication also needs a required reviewer;
+2. choose whether publication needs a required reviewer;
 3. prevent administrators from bypassing the protection if that matches the project policy.
 
-Starting `Production deployment` is always an explicit operator action. If a required reviewer is
-configured, the deployment also waits for that reviewer's approval.
+Routine publication starts automatically after successful main push validation. Any configured required
+reviewer still gates the protected environment. Manual production operations remain explicit
+operator actions; automatic publication never selects bootstrap or rollback.
 
 Create these environment variables, not repository-level variables. Copy the current value from the
 corresponding local shell variable:
@@ -254,22 +256,34 @@ For ordinary website changes:
 
 1. rerun `prepare-hetzner-server.sh` before merging if the tracked updater changed;
 2. merge the website changes into `main`;
-3. wait for push-triggered `CI` to pass;
-4. run **Production deployment** on `main` with `deploy`, then check its job summary.
+3. wait for main CI's validation gate and its **Publish validated website** jobs to pass;
+4. check the deployment summary and the live revision metadata.
 
 The workflow builds exact locked documentation revisions without production secrets, uploads the
 complete artifact to `incoming/`, activates the SHA-named release, verifies the public server, and
 then finalizes retention. A verification failure restores the complete previous link state.
 
-To redeploy the current `main` revision, run **Production deployment** again with `deploy`. Each
-deployment builds, verifies, and publishes through the same jobs.
+The reusable publisher is called only after the required CI gate succeeds for a main push.
+Pull requests, merge queues, manual CI runs, forks and failed validation never request publication.
+The selector verifies the caller's main push payload and requires its exact SHA to match the
+explicit deploy input. Publication uses no privileged completion trigger or inherited secrets.
+Both request admission and the publisher compare the tested SHA with current main; a superseded
+automatic candidate is skipped without changing the server. Main CI and production concurrency
+keep publication serial without canceling an active update. PR and merge-queue validation retain
+their cancellation behavior.
+
+To redeploy the current `main` revision, run **Production deployment** with `deploy`. Explicit manual
+deployments may select an older revision in main history; rollback still promotes a retained server
+artifact. A later successful main push publishes current main again. Each publication builds,
+verifies, and publishes through the same jobs.
 
 ## Documentation source updates
 
 Renovate polls the `main` branch of BoxFerry, ComposeLens, PodmanLens, and QuadletLens. When a source
 commit changes, Renovate groups the exact revision pins into one pull request. Required website
 checks must pass before platform auto-merge. The resulting `main` CI run validates the updated
-site. An operator then runs **Production deployment** on `main` with `deploy` to publish it.
+site; after the required gate succeeds it calls automatic publication of that exact revision if
+it is still current main.
 
 Enable Renovate and **Allow auto-merge** in the website repository. No Lens workflow, webhook, or
 cross-repository token is required.

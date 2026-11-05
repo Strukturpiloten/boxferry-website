@@ -1,6 +1,6 @@
 # 0003: Hetzner atomic static deployment
 
-- Status: Accepted
+- Status: Accepted; automatic triggering partially superseded by [0006](0006-validated-main-publication.md)
 - Date: 2026-08-23
 
 ## Context
@@ -40,6 +40,7 @@ Store private keys only as protected GitHub environment secrets. Derive and prin
 and complete restricted `authorized_keys` entries on every authorized run. Pin the SSH host key and
 restrict deployment operations to `main` and the `production` environment.
 
+The following trigger policy is superseded by [0006](0006-validated-main-publication.md).
 After bootstrap, require an operator to start the `Production deployment` workflow explicitly on
 `main`. Successful push-triggered `CI` runs validate the site but do not request publication.
 The deployment workflow builds and validates the requested exact revision before entering the

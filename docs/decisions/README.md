@@ -10,3 +10,4 @@ relevant decision rather than silently changing the implementation.
 | [0003](0003-hetzner-atomic-static-deployment.md)           | Accepted           | Hetzner atomic static deployment                             |
 | [0004](0004-signal-identity-and-format-growth.md)          | Accepted           | Signal identity and scalable format discovery                |
 | [0005](0005-shared-validation-and-dependency-admission.md) | Accepted           | Shared validation and dependency admission                   |
+| [0006](0006-validated-main-publication.md)                 | Accepted           | Publish validated current main automatically                 |

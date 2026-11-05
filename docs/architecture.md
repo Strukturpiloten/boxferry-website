@@ -68,13 +68,18 @@ last. The updater permits one server-enforced bootstrap only while no releases e
 first `current` link to be created before Hetzner can serve that path. Every later activation runs
 HTTPS and Apache policy checks before finalization; failures restore the saved link state.
 
-Push-triggered `CI` runs on `main` validate the complete locked site but do not publish it.
-An operator explicitly starts `Production deployment` on `main` to request deployment, bootstrap,
-key rendering, or rollback. The deployment workflow validates and builds the selected exact revision
-before using the protected `production` environment.
+CI validation jobs check the complete locked site without production secrets. After the required
+validation gate succeeds, main push CI calls the reusable `Production deployment` workflow for
+that exact commit. Other CI contexts cannot call automatic publication, and the request selector
+rejects invalid caller contexts and skips superseded automatic revisions. The publisher
+checks current main again before using its artifact or SSH keys. Main CI and production remain
+serialized without canceling an active publisher;
+manual deploy, bootstrap, key rendering and rollback remain available. Every publication rebuilds
+and validates its selected exact revision before using the protected `production` environment.
 
 The deployment contract and administrator procedure are defined in [`deployment.md`](deployment.md)
-and [decision 0003](decisions/0003-hetzner-atomic-static-deployment.md).
+and [decision 0003](decisions/0003-hetzner-atomic-static-deployment.md), with automatic triggering
+defined by [decision 0006](decisions/0006-validated-main-publication.md).
 
 ## Public contract
 

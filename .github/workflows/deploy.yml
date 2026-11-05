@@ -1,9 +1,22 @@
 ---
 name: Production deployment
 run-name: >-
-  Production ${{ inputs.operation }} at ${{ inputs.revision || github.sha }}
+  Production ${{ inputs.operation || 'deploy' }} at
+  ${{ inputs.revision || github.sha }}
 
 on:
+  workflow_call:
+    inputs:
+      operation:
+        type: string
+        required: true
+      revision:
+        type: string
+        required: true
+      automatic:
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch:
     inputs:
       operation:
@@ -32,11 +45,16 @@ concurrency:
 jobs:
   request:
     name: Validate production request
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (inputs.automatic == true && github.event_name == 'push' &&
+      github.ref == 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     outputs:
       operation: ${{ steps.normalize.outputs.operation }}
       revision: ${{ steps.normalize.outputs.revision }}
+      automatic: ${{ steps.normalize.outputs.automatic }}
     steps:
       - name: Check out the default branch history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,41 +65,14 @@ jobs:
       - name: Normalize and validate the production request
         id: normalize
         env:
+          AUTOMATIC_DEPLOYMENT: ${{ inputs.automatic || false }}
           REQUESTED_OPERATION: ${{ inputs.operation }}
           REQUESTED_REVISION: ${{ inputs.revision }}
-          SOURCE_REVISION: ${{ inputs.revision || github.sha }}
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
-            printf 'Production operation %s must run from main, not %s.\n' \
-              "${REQUESTED_OPERATION}" "${GITHUB_REF}" >&2
-            exit 1
-          fi
-          if [[ ! "${REQUESTED_OPERATION}" =~ \
-            ^(show-authorized-keys|bootstrap|deploy|rollback)$ ]]; then
-            printf 'Unsupported production operation: %s\n' "${REQUESTED_OPERATION}" >&2
-            exit 1
-          fi
-          if [[ "${REQUESTED_OPERATION}" == rollback ]]; then
-            if [[ ! "${REQUESTED_REVISION}" =~ ^[0-9a-f]{40}$ ]]; then
-              printf 'Rollback requires an exact 40-character lowercase revision.\n' >&2
-              exit 1
-            fi
-          elif [[ -n "${REQUESTED_REVISION}" && "${REQUESTED_OPERATION}" != deploy ]]; then
-            printf 'Revision input is accepted only for deploy or rollback.\n' >&2
-            exit 1
-          fi
-          if [[ ! "${SOURCE_REVISION}" =~ ^[0-9a-f]{40}$ ]]; then
-            printf 'Website revision must be an exact lowercase commit SHA.\n' >&2
-            exit 1
-          fi
-          if ! git cat-file -e "${SOURCE_REVISION}^{commit}" ||
-            ! git merge-base --is-ancestor "${SOURCE_REVISION}" HEAD; then
-            printf 'Website revision must belong to main history.\n' >&2
-            exit 1
-          fi
-          printf 'operation=%s\n' "${REQUESTED_OPERATION}" >> "${GITHUB_OUTPUT}"
-          printf 'revision=%s\n' "${SOURCE_REVISION}" >> "${GITHUB_OUTPUT}"
+          python3 scripts/select_deployment_request.py \
+            --main-revision "$(git rev-parse HEAD)" \
+            --github-output "${GITHUB_OUTPUT}" --summary "${GITHUB_STEP_SUMMARY}"
 
   show-authorized-keys:
     name: Show restricted SSH key entries
@@ -199,12 +190,29 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.request.outputs.revision }}
+      - name: Recheck the automatic revision against current main
+        id: current
+        if: needs.request.outputs.automatic == 'true'
+        env:
+          SOURCE_REVISION: ${{ needs.request.outputs.revision }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          python3 scripts/select_deployment_request.py --check-current \
+            --revision "${SOURCE_REVISION}" --main-revision "$(git rev-parse FETCH_HEAD)" \
+            --github-output "${GITHUB_OUTPUT}" --summary "${GITHUB_STEP_SUMMARY}"
       - name: Download immutable static release
+        if: >-
+          needs.request.outputs.automatic != 'true' ||
+          steps.current.outputs.current == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: boxferry-site-${{ needs.request.outputs.revision }}
           path: site
       - name: Derive and print restricted authorized_keys entries
+        if: >-
+          needs.request.outputs.automatic != 'true' ||
+          steps.current.outputs.current == 'true'
         env:
           BOXFERRY_DEPLOY_ROOT: ${{ vars.BOXFERRY_DEPLOY_ROOT }}
           BOXFERRY_RSYNC_SSH_PRIVATE_KEY: ${{ secrets.BOXFERRY_RSYNC_SSH_PRIVATE_KEY }}
@@ -212,6 +220,9 @@ jobs:
             ${{ secrets.BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY }}
         run: ./scripts/prepare-deployment-keys.sh
       - name: Pin the Hetzner SSH host identity
+        if: >-
+          needs.request.outputs.automatic != 'true' ||
+          steps.current.outputs.current == 'true'
         env:
           BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}
           BOXFERRY_DEPLOY_KNOWN_HOSTS: ${{ vars.BOXFERRY_DEPLOY_KNOWN_HOSTS }}
@@ -230,6 +241,9 @@ jobs:
           ssh-keygen -F "[${BOXFERRY_DEPLOY_HOST}]:${BOXFERRY_DEPLOY_PORT}" \
             -f "${keys_directory}/known_hosts" > /dev/null
       - name: Upload and publish release
+        if: >-
+          needs.request.outputs.automatic != 'true' ||
+          steps.current.outputs.current == 'true'
         env:
           BOXFERRY_DEPLOY_OPERATION: ${{ needs.request.outputs.operation }}
           BOXFERRY_DEPLOY_HOST: ${{ vars.BOXFERRY_DEPLOY_HOST }}

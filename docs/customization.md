@@ -54,7 +54,9 @@ uncertain roadmap items out of the public registry.
 ## Change the content width
 
 Edit the `.md-grid` rule near the top of `site.css`. Its `max-width` controls the shared page grid;
-responsive sidebars and the main content column continue to use Zensical's layout.
+responsive sidebars and the main content column continue to use Zensical's layout. Use a CSS
+length with a unit, such as `1620px`; a nonzero `max-width` without a unit is invalid. Paragraphs and lists
+retain their separate readability limit.
 
 ## Change colors
 
