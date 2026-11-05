@@ -796,7 +796,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             "automatic: true",
         ):
             self.assertIn(expected, publish_call)
-        self.assertNotIn("secrets:", ci)
+        self.assertNotIn("secrets:", ci.split("\n  publish-site:\n", 1)[0])
         self.assertNotIn("secrets: inherit", ci)
         self.assertIn(
             "cancel-in-progress: ${{ github.event_name == 'pull_request' || "
@@ -809,6 +809,27 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertIn("merge_group:", ci)
         for permission in ("contents: read", "actions: read", "statuses: read"):
             self.assertIn(permission, ci)
+
+    def test_reusable_publisher_receives_only_named_deployment_credentials(self) -> None:
+        ci = (ROOT / ".github/workflows/ci.yml").read_text()
+        deployment = (ROOT / ".github/workflows/deploy.yml").read_text()
+        names = {"BOXFERRY_RSYNC_SSH_PRIVATE_KEY", "BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY"}
+        publish = ci.split("\n  publish-site:\n", 1)[1]
+        forwarded = publish.split("    secrets:\n", 1)[1].split("    with:\n", 1)[0]
+        self.assertEqual(
+            {line.strip() for line in forwarded.splitlines() if line.strip()},
+            {f"{name}: ${{{{ secrets.{name} }}}}" for name in names},
+        )
+        self.assertNotIn("secrets: inherit", ci)
+        self.assertNotIn("secrets:", ci.split("\n  publish-site:\n", 1)[0])
+        called = deployment.split("  workflow_call:\n", 1)[1]
+        declared = called.split("    secrets:\n", 1)[1].split("  workflow_dispatch:", 1)[0]
+        self.assertEqual(set(re.findall(r"^      ([A-Z_]+):$", declared, re.MULTILINE)), names)
+        self.assertEqual(declared.count("required: false"), 2)
+        publisher = deployment.split("\n  deploy:\n", 1)[1].split("\n  rollback:\n", 1)[0]
+        self.assertIn("name: production", publisher)
+        for name in names:
+            self.assertIn(f"${{{{ secrets.{name} }}}}", publisher)
 
     def test_main_push_publication_has_a_distinct_concurrency_lane(self) -> None:
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()

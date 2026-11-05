@@ -20,9 +20,10 @@ SHA and deploy-only automatic intent. The request selector independently validat
 push payload, repository, branch and matching explicit SHA. Pull requests, forks, merge groups,
 manual CI and failed validation cannot authorize automatic publication.
 
-Use `workflow_call`, not a privileged `workflow_run` completion trigger. Environment secrets are
-resolved only by the called publisher's protected production jobs; the caller does not inherit or
-forward secrets. Main push CI has a separate concurrency lane from manual CI; read-only manual runs cannot replace
+Use `workflow_call`, not a privileged `workflow_run` completion trigger. The publication call
+forwards only the named restricted upload and updater keys for existing repository-level setups.
+Protected environment secrets take precedence in production jobs. There is no blanket secret
+inheritance, and validation steps receive neither SSH key in their environment. Main push CI has a separate concurrency lane from manual CI; read-only manual runs cannot replace
 its pending publication. Main CI and production never cancel an active publication. PR and
 merge-group validation retain cancellation because they cannot publish.
 

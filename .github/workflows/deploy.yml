@@ -17,6 +17,13 @@ on:
         type: boolean
         required: false
         default: false
+    secrets:
+      BOXFERRY_RSYNC_SSH_PRIVATE_KEY:
+        description: Restricted upload key for existing repository-level credentials
+        required: false
+      BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY:
+        description: Restricted updater key for existing repository-level credentials
+        required: false
   workflow_dispatch:
     inputs:
       operation:

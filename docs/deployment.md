@@ -111,7 +111,9 @@ ssh-keygen -t ed25519 -a 100 -N '' \
   -C boxferry-website-version-updater
 ```
 
-Create these `production` environment secrets:
+Create these `production` environment secrets. The CI caller also forwards only these two named
+credentials for existing repository-level setups; environment secrets take precedence in the
+publisher. No blanket secret inheritance or credential copying is required.
 
 | Secret                                     | File to copy                                |
 | ------------------------------------------ | ------------------------------------------- |
