@@ -1,0 +1,11 @@
+{% if config.extra.analytics %}
+<script
+  id="__analytics"
+  src="{{ 'assets/javascripts/analytics.js' | url }}"
+  data-measurement-id="{{ config.extra.analytics.property | e }}"
+  data-production-origin="{{ config.site_url | trim('/') | e }}"
+  data-enabled="{{ 'true' if config.extra.analytics.enabled else 'false' }}"
+  data-policy-version="{{ config.extra.analytics.policy_version | e }}"
+  data-consent-days="{{ config.extra.analytics.consent_days | e }}"
+></script>
+{% endif %}

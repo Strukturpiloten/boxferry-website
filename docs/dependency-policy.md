@@ -62,3 +62,17 @@ policy test permits only this exact local workflow and rationale. External refer
 SHA and release-tag checks. No trigger, permission or integrity audit is disabled, and no software
 pin or Renovate extraction path changes. Review the annotation when the canonical tool gains `$/`
 support.
+
+## Optional Analytics exception
+
+[ADR 0007](decisions/0007-opt-in-analytics.md) accepts Google's property-configured hosted GA4
+tag after explicit consent. Google supplies neither an immutable release version nor a supported
+SRI digest for this changing endpoint. This is an explicit unavailable-integrity exception, not
+a checksum-pinned dependency. The maintainer owns its privacy and behavior review and can disable
+collection with `project.extra.analytics.enabled`. Do not add a fabricated version or digest.
+
+Native consent comes from the existing locked Zensical package. The small first-party lifecycle
+adapter uses browser APIs and Node's built-in test runner; no package, lockfile or tool pin changes.
+Existing Renovate ownership of Zensical and tooling remains unchanged. The mutable Google service
+has no release extraction path or duplicate Renovate manager. Local, PR, main and deployment
+validation consume the same complete script and include its lifecycle and rendered-site checks.

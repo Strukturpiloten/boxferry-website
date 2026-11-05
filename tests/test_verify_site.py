@@ -11,6 +11,7 @@ from pathlib import Path
 
 from scripts.prepare_deployment import prepare_deployment
 from scripts.verify_site import (
+    ANALYTICS_ASSET,
     COMPOSE_GUIDE_ROUTE,
     REQUIRED_ASSETS,
     REQUIRED_LINKS,
@@ -112,6 +113,11 @@ class SiteVerificationTests(unittest.TestCase):
             self.formats = tomllib.load(handle)["project"]["extra"]["formats"]
         self._write_homepage_formats(self.formats)
         prepare_deployment(self.site, revision=REVISION)
+        (self.site / ANALYTICS_ASSET).write_bytes((ROOT / "content" / ANALYTICS_ASSET).read_bytes())
+        for path in self.site.rglob("*.html"):
+            path.write_text(
+                path.read_text(encoding="utf-8") + self._consent_html(), encoding="utf-8"
+            )
 
     def _write_homepage_formats(self, formats: list[dict[str, str]]) -> None:
         for item in formats:
@@ -177,6 +183,73 @@ class SiteVerificationTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(SiteVerificationError, "skip-link target"):
             _verify_homepage_formats(self.site, self.formats)
+
+    def _consent_html(self) -> str:
+        with (ROOT / "zensical.toml").open("rb") as handle:
+            analytics = tomllib.load(handle)["project"]["extra"]["analytics"]
+        return (
+            '<div data-md-component="consent" hidden><form name="consent">'
+            '<input type="checkbox" name="analytics">'
+            '<button class="md-button md-button--primary">Accept</button>'
+            '<button type="reset" class="md-button md-button--primary">Reject</button>'
+            '</form></div><a href="#__consent">Privacy settings</a>'
+            f'<script id="__analytics" src="https://boxferry.dev/{ANALYTICS_ASSET}" '
+            f'data-measurement-id="{analytics["property"]}" '
+            'data-production-origin="https://boxferry.dev" '
+            f'data-enabled="{str(analytics["enabled"]).lower()}" '
+            f'data-policy-version="{analytics["policy_version"]}" '
+            f'data-consent-days="{analytics["consent_days"]}"></script>'
+        )
+
+    def test_missing_or_unsafe_consent_integration_fails(self) -> None:
+        # Exercise a documentation route rather than just the homepage.
+        page = self.site / "docs" / "getting-started" / "index.html"
+        original = page.read_text(encoding="utf-8")
+        cases = (
+            ('name="consent"', 'name="other"', "native unchecked"),
+            ('name="analytics"', 'name="analytics" checked', "native unchecked"),
+            ('name="analytics"', 'name="analytics" disabled', "native unchecked"),
+            ('type="reset"', 'type="button"', "accept/reject"),
+            ('href="#__consent"', 'href="#other"', "Privacy settings"),
+            ('id="__analytics"', 'id="other"', "first-party consent provider"),
+            (
+                'data-production-origin="https://boxferry.dev"',
+                'data-production-origin="https://boxferry.dev/"',
+                "first-party consent provider",
+            ),
+            (
+                'data-measurement-id="G-TX06VP39B2"',
+                'data-measurement-id="G-OTHER"',
+                "first-party consent provider",
+            ),
+            ('id="__analytics"', 'id="__analytics" defer', "first-party consent provider"),
+        )
+        for old, new, message in cases:
+            with self.subTest(replacement=new):
+                page.write_text(original.replace(old, new), encoding="utf-8")
+                with self.assertRaisesRegex(SiteVerificationError, message):
+                    verify_site(self.site)
+        page.write_text(original, encoding="utf-8")
+
+    def test_statically_embedded_google_tag_fails(self) -> None:
+        page = self.site / "index.html"
+        page.write_text(
+            page.read_text(encoding="utf-8")
+            + '<script src="https://www.googletagmanager.com/gtag/js?id=G-TX06VP39B2"></script>',
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(SiteVerificationError, "static remote script"):
+            verify_site(self.site)
+
+    def test_stale_analytics_asset_fails(self) -> None:
+        (self.site / ANALYTICS_ASSET).write_text("// stale", encoding="utf-8")
+        with self.assertRaisesRegex(SiteVerificationError, "Analytics asset is stale"):
+            verify_site(self.site)
+
+    def test_raw_rustdoc_has_no_banner_requirement(self) -> None:
+        page = self.site / "docs/api/compose-lens/compose_lens/index.html"
+        page.write_text("<!doctype html><title>Rust API</title>", encoding="utf-8")
+        verify_site(self.site)
 
     def test_complete_site_passes(self) -> None:
         verify_site(self.site)

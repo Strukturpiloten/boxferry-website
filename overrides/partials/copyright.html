@@ -7,6 +7,9 @@
     <a href="{{ 'docs/sources/' | url }}">Documentation sources</a>
     <a href="{{ config.extra.legal_notice_path | url }}">Legal Notice</a>
     <a href="{{ config.extra.privacy_policy_path | url }}">Privacy Policy</a>
+    {% if config.extra.consent %}
+    <a href="#__consent">Privacy settings</a>
+    {% endif %}
     <a href="{{ config.extra.contact_url }}" target="_blank" rel="noopener noreferrer">Contact</a>
   </nav>
   {% if not config.extra.generator == false %}

@@ -36,8 +36,14 @@ agreement; do not disclose customer-account credentials or contract contents in 
 
 - Verify theme storage against the pinned Zensical version and active features, not a stale build.
 - Describe only the selected color scheme while linked content-tab persistence is disabled.
-- Check cookies and browser network/storage behavior on the actual deployed site; no analytics,
-  tracking, remote fonts or third-party scripts are authorized by these text changes.
+- Check cookies and browser network/storage behavior on the actual deployed site. Optional GA4
+  follows [ADR 0007](decisions/0007-opt-in-analytics.md) and the account checklist in
+  [analytics.md](analytics.md); text edits alone never enable it. Verify first visit, rejection,
+  selected opt-in, footer withdrawal and instant navigation. Remote fonts remain disabled.
+- Consent preferences include the native choice plus policy version and timestamps, without a
+  separate identifier. Both preferences and configured GA cookies last up to 180 days. A policy
+  change, expiry or invalid record requires another choice. Keep the unchecked option and reject
+  action accessible.
 - Preserve local search, existing English legal routes and footer access to both pages.
 - Run the repository gate before a later commit or PR. Content tests prevent regressions; they
   do not prove host operations or determine whether consent is legally required.
