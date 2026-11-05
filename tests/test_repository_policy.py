@@ -662,6 +662,14 @@ class RepositoryPolicyTests(unittest.TestCase):
                             )
                         else:
                             self.assertIn("currentValue=automation-v1", workflow.read_text())
+                    elif "uses: ./.github/workflows/" in line:
+                        self.assertEqual(workflow.name, "ci.yml")
+                        self.assertEqual(
+                            line,
+                            "uses: ./.github/workflows/deploy.yml "
+                            "# zizmor: ignore[self-repository] -- Same-commit reusable workflow; "
+                            "pinned actionlint 1.7.12 lacks $/ support.",
+                        )
                     elif "Strukturpiloten/boxferry/.github/workflows/" in line:
                         self.assertRegex(line, r"@[0-9a-f]{40} # automation-v1 interface v1")
                     else:
@@ -740,15 +748,35 @@ class RepositoryPolicyTests(unittest.TestCase):
             "BOXFERRY_WEBSITE_SOURCE_MODE: locked",
             "include-hidden-files: true",
             "inputs.revision || github.sha",
-            "git merge-base --is-ancestor",
+            "python3 scripts/select_deployment_request.py",
+            "--check-current",
+            "steps.current.outputs.current == 'true'",
             "rsync -rlptz --delete --safe-links",
             "activate %s %s",
             "bootstrap %s %s",
             "finalize %s",
         ):
             self.assertIn(expected, deployment)
-        for forbidden in ("pull_request:", "workflow_run:", "pull_request_target:"):
+        for expected in (
+            "workflow_call:",
+            "inputs.automatic == true && github.event_name == 'push'",
+            "github.ref == 'refs/heads/main'",
+            "AUTOMATIC_DEPLOYMENT: ${{ inputs.automatic || false }}",
+            "automatic: ${{ steps.normalize.outputs.automatic }}",
+            "cancel-in-progress: false",
+        ):
+            self.assertIn(expected, deployment)
+        for forbidden in (
+            "pull_request:",
+            "pull_request_target:",
+            "workflow_run:",
+            "actions: write",
+        ):
             self.assertNotIn(forbidden, deployment)
+        publish = deployment.split("\n  deploy:\n", 1)[1].split("\n  rollback:\n", 1)[0]
+        self.assertLess(publish.index("--check-current"), publish.index("Download immutable"))
+        self.assertLess(publish.index("--check-current"), publish.index("secrets."))
+        self.assertEqual(publish.count("steps.current.outputs.current == 'true'"), 4)
         for forbidden in (
             "statuses: write",
             "actions: write",
@@ -757,12 +785,47 @@ class RepositoryPolicyTests(unittest.TestCase):
             "inputs[operation]=deploy",
         ):
             self.assertNotIn(forbidden, ci)
+        publish_call = ci.split("\n  publish-site:\n", 1)[1]
+        for expected in (
+            "needs: [pr-gate]",
+            "needs.pr-gate.result == 'success'",
+            "github.event_name == 'push' && github.ref == 'refs/heads/main'",
+            "uses: ./.github/workflows/deploy.yml",
+            "revision: ${{ github.sha }}",
+            "operation: deploy",
+            "automatic: true",
+        ):
+            self.assertIn(expected, publish_call)
+        self.assertNotIn("secrets:", ci)
+        self.assertNotIn("secrets: inherit", ci)
+        self.assertIn(
+            "cancel-in-progress: ${{ github.event_name == 'pull_request' || "
+            "github.event_name == 'merge_group' }}",
+            ci,
+        )
         self.assertIn("BOXFERRY_WEBSITE_SOURCE_MODE: locked", ci)
         self.assertIn("shared-dependency-wait.yml@", ci)
         self.assertIn("name: Dependency eligibility", ci)
         self.assertIn("merge_group:", ci)
         for permission in ("contents: read", "actions: read", "statuses: read"):
             self.assertIn(permission, ci)
+
+    def test_main_push_publication_has_a_distinct_concurrency_lane(self) -> None:
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        group = next(line.strip() for line in workflow.splitlines() if line.startswith("  group:"))
+        groups = {
+            event: group.replace("${{ github.workflow }}", "CI")
+            .replace("${{ github.event_name }}", event)
+            .replace("${{ github.ref }}", "refs/heads/main")
+            for event in ("push", "workflow_dispatch")
+        }
+        self.assertNotEqual(groups["push"], groups["workflow_dispatch"])
+        self.assertNotIn("${{", groups["push"])
+        self.assertIn(
+            "cancel-in-progress: ${{ github.event_name == 'pull_request' || "
+            "github.event_name == 'merge_group' }}",
+            workflow,
+        )
 
     def test_required_ci_is_the_unique_always_running_validation_aggregate(self) -> None:
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()

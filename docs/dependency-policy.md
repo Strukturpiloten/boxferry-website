@@ -45,10 +45,20 @@ have no age hold. Mixed third-party changes retain the ordinary policy.
 
 The default-branch eligibility service evaluates metadata without executing candidate code.
 Candidate CI only reads the exact revision's admission evidence using the trusted base manifest's
-automation revision. Main, manual validation and protected deployment remain complete. Deployment
-requires a separate explicit operator request; dependency automerge never publishes the site.
+automation revision. Main, manual validation and protected deployment remain complete. After a dependency update merges, main CI can publish the website only through the required
+validation gate and the reusable publisher in [ADR 0006](decisions/0006-validated-main-publication.md).
 
 `deployment/historical-uv.json` freezes verified uv 0.13.5 integrity for the preserved pre-adoption
 rebuild path. It is historical evidence, not an active upgrade pin: no Renovate manager extracts
 it. The legacy version is read from the approved source's original TOML declaration; new sources
 use their own canonical shared revision. See the deployment runbook.
+
+## Same-commit website publisher
+
+The CI caller uses the standard `./.github/workflows/deploy.yml` reference, which GitHub resolves
+at the caller's exact commit. Pinned actionlint 1.7.12 rejects the newer `$/` spelling recommended by
+zizmor. One inline `self-repository` style annotation documents that compatibility boundary; the
+policy test permits only this exact local workflow and rationale. External references retain full
+SHA and release-tag checks. No trigger, permission or integrity audit is disabled, and no software
+pin or Renovate extraction path changes. Review the annotation when the canonical tool gains `$/`
+support.

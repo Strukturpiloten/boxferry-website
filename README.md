@@ -35,11 +35,13 @@ complete main and release validation evidence separate from this contributor-fee
 
 ## Deploy to production
 
-Push-triggered CI runs on `main` validate the complete site. Operators explicitly start the
-`Production deployment` workflow on `main` for `deploy`, `bootstrap`, `rollback`, and key-rendering
-operations. It builds the exact revision before entering the protected GitHub `production`
-environment. New servers require one administrator preparation and one manual `bootstrap`
-publication. Production keeps five rollback targets.
+After its validation gate passes, push-triggered `CI` on `main` calls the reusable
+`Production deployment` workflow automatically.
+Only the exact tested revision can publish, and superseded automatic revisions are skipped. The
+deployment workflow rebuilds and validates the locked site before entering the protected GitHub
+`production` environment. Manual deploy, bootstrap, rollback and key-rendering operations remain
+available. New servers still require administrator preparation and a manual bootstrap. Production
+keeps five rollback targets.
 
 Renovate polls the `main` branch of BoxFerry and every Lens repository. It groups changed revision
 pins into one pull request and merges that pull request only after the website checks pass.
@@ -57,5 +59,5 @@ AI-readable documentation routes and optional consumer registration are describe
 
 The site assembles concise BoxFerry, ComposeLens, PodmanLens, and QuadletLens documentation,
 checks published CLI examples, generates stable diagnostic-rule pages, and publishes first-party
-Lens Rust API documentation. The production workflow builds exact locked revisions and
-deploys immutable, rollback-capable static releases to Hetzner on an explicit operator request.
+Lens Rust API documentation. Successful main validation starts automatic publication of exact
+locked revisions as immutable, rollback-capable static releases to Hetzner.
