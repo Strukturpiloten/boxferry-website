@@ -1,6 +1,10 @@
 .md-grid {
   max-width: 1620px;
 }
+.md-consent__overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 .md-typeset {
   --md-typeset-a-color: var(--bf-brand-primary);
 }
