@@ -70,7 +70,9 @@ HTTPS and Apache policy checks before finalization; failures restore the saved l
 
 CI validation jobs check the complete locked site without production secrets. After the required
 validation gate succeeds, main push CI calls the reusable `Production deployment` workflow for
-that exact commit. Other CI contexts cannot call automatic publication, and the request selector
+that exact commit. Only its two named deployment keys are forwarded for repository-level
+credential compatibility; validation steps do not receive those keys. The called production
+environment can supply its own keys. Other CI contexts cannot call automatic publication, and the request selector
 rejects invalid caller contexts and skips superseded automatic revisions. The publisher
 checks current main again before using its artifact or SSH keys. Main CI and production remain
 serialized without canceling an active publisher;

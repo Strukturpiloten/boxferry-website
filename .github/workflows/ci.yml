@@ -200,6 +200,9 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/deploy.yml # zizmor: ignore[self-repository] -- Same-commit reusable workflow; pinned actionlint 1.7.12 lacks $/ support.
+    secrets:
+      BOXFERRY_RSYNC_SSH_PRIVATE_KEY: ${{ secrets.BOXFERRY_RSYNC_SSH_PRIVATE_KEY }}
+      BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY: ${{ secrets.BOXFERRY_VERSION_UPDATER_SSH_PRIVATE_KEY }}
     with:
       operation: deploy
       revision: ${{ github.sha }}
