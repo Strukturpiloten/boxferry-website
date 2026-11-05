@@ -11,20 +11,46 @@ the native form. Analytics is unchecked initially; **Accept** saves selected cat
 The measurement ID is `G-TX06VP39B2`. The maintainer confirmed event-data retention of **2 months**
 and user-data retention of **14 months**. These differ from cookie lifetime and aggregated reports.
 
-Collection is currently disabled by `project.extra.analytics.enabled = false` in `zensical.toml`.
-The banner still appears and remembers a choice locally. Before changing the flag, confirm:
+Collection is enabled by `project.extra.analytics.enabled = true` in `zensical.toml`.
+On 5 November 2026, the maintainer confirmed:
 
-1. In the BoxFerry web stream, **Enhanced Measurement / Optimierte Analysen** is off, including
-   history-based page views, search, form interactions and outbound/download events.
-2. Google Signals, advertising personalization and optional Google-products-and-services sharing
-   are disabled. Review connected advertising products and user-provided data collection.
-3. The applicable Google data-processing terms are accepted and the privacy notice matches the
-   actual account settings and transfer safeguards. Keep the separate Hetzner checks in
-   [legal-maintenance.md](legal-maintenance.md).
+1. **Enhanced Measurement / Optimierte Analysen** is off for the BoxFerry web stream.
+2. Google Signals and advertising personalization were switched off.
+3. Optional **Google products & services** account data sharing was already unchecked/off;
+   its setting was not changed. This control applies to every property in that Analytics account.
 
-`send_page_view: false` disables the tag's automatic configuration view; it does not independently
-disable Enhanced Measurement's history-triggered views. Account confirmation is required. Do not
-paste a `gtm.js` snippet into the site: this integration uses GA4's `/gtag/js` endpoint.
+The maintainer also confirmed that property-level user-provided data collection is off.
+These are maintainer-reported account settings; the website build does not inspect or change the
+Google account. Review them again after account changes, including connected advertising products.
+Collection can be stopped with the same flag without removing the banner.
+
+Google has a separate tag-level configuration under the web stream's **Google tag** settings.
+Use **Show all** to review automatic event detection and user-provided data capabilities. The
+maintainer explicitly keeps these tag-level capabilities enabled. Destination-level settings and
+tag capabilities have different scopes; a capability being present does not prove data
+transmission. Property-level user-provided data collection remains off and advertising-data
+consent remains denied. Validate actual page-view counts and transmitted fields before activation;
+do not mix manual and automatic views without checking for duplicates.
+See [Google's tag configuration guide](https://support.google.com/analytics/answer/12131703?hl=en).
+
+Detailed location/device collection also remains enabled at the maintainer's explicit choice.
+The privacy notice covers city, screen resolution and detailed browser/device information.
+These optional account settings do not authorize collection before a visitor's Analytics opt-in.
+
+[Google documents](https://support.google.com/analytics/answer/3379636?hl=en) that its data-processing
+terms are already incorporated for direct Analytics customers established in the EEA, UK or
+Switzerland. This provider statement does not verify this account's legal entity, contacts or
+agreements. The maintainer remains responsible for those details and the separate Hetzner checks
+in [legal-maintenance.md](legal-maintenance.md).
+
+The Google tag owns the initial view with `send_page_view: true`; the adapter sends no manual
+initial event. Later completed instant-navigation views are sent manually, with canonical-path
+deduplication. Destination Enhanced Measurement stays off to prevent independent history views.
+Tag-level detection capabilities remain enabled at the maintainer's choice.
+
+The clarified notice uses policy version `2026-11-05-ga4-v2`; a previous v1 choice cannot authorize
+collection until the visitor makes a fresh choice. Do not paste a `gtm.js` snippet into the site:
+this integration uses GA4's `/gtag/js` endpoint. See [ADR 0008](decisions/0008-initial-and-navigation-analytics.md).
 
 ## Implementation and review
 

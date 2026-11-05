@@ -108,7 +108,7 @@ Remote fonts remain disabled. Optional GA4 requires a current explicit opt-in, t
 origin and an enabled collection setting; no Google request precedes these gates. The native
 Zensical banner owns choices, with a permanent footer settings link. A local adapter expires
 preferences after 180 days, handles withdrawal and emits only query-free canonical page views.
-Collection remains disabled pending confirmation of the Google account settings.
+The maintainer confirmed the Google account settings before enabling collection.
 
 Apache denies the private release manifest and adds a content policy with narrowly scoped Google
 Analytics exceptions, HSTS, framing denial, MIME protection, referrer policy, and capability

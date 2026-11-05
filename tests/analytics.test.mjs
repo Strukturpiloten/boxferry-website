@@ -8,7 +8,7 @@ const source = await readFile(
   "utf8",
 );
 const origin = "https://boxferry.dev";
-const version = "2026-11-05-ga4";
+const version = "2026-11-05-ga4-v2";
 const ttl = 180 * 86400000;
 const timestamp = Date.UTC(2026, 10, 5);
 const choiceKey = "/.__consent";
@@ -255,7 +255,7 @@ function optedIn(options = {}) {
   return browser({ choice: accepted, metadata, ...options });
 }
 
-function views(site) {
+function virtualViews(site) {
   return site.commands().filter(([command, name]) => command === "event" && name === "page_view");
 }
 
@@ -334,6 +334,7 @@ test("legacy, malformed, expired and changed-policy choices require new opt-in",
     { choice: accepted, metadata: {} },
     { choice: accepted, metadata: { ...metadata, extra: "identifier" } },
     { choice: accepted, metadata: { ...metadata, version: "previous" } },
+    { choice: accepted, metadata: { ...metadata, version: "2026-11-05-ga4" } },
     { choice: accepted, metadata: { ...metadata, savedAt: timestamp + 1 } },
     { choice: accepted, metadata: { ...metadata, expiresAt: timestamp } },
     { choice: accepted, metadata: { ...metadata, savedAt: timestamp - ttl, expiresAt: timestamp } },
@@ -384,7 +385,7 @@ test("failed probe removal cannot enable Google and restricted cookies do not br
   assert.deepEqual(site.record(metadataKey), metadata);
 });
 
-test("Google configuration denies ads and owns exactly one manual view", () => {
+test("Google configuration denies ads and owns one automatic initial view", () => {
   const site = optedIn();
   site.init();
   site.init();
@@ -412,7 +413,7 @@ test("Google configuration denies ads and owns exactly one manual view", () => {
   const config = commands.find(([name]) => name === "config");
   assert.equal(config[1], "G-TX06VP39B2");
   assert.deepEqual(JSON.parse(JSON.stringify(config[2])), {
-    send_page_view: false,
+    send_page_view: true,
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
     cookie_expires: 180 * 86400,
@@ -421,7 +422,7 @@ test("Google configuration denies ads and owns exactly one manual view", () => {
     cookie_path: "/",
   });
   assert.ok(commands.findIndex(([name]) => name === "set") < commands.indexOf(config));
-  assert.equal(views(site).length, 1);
+  assert.equal(virtualViews(site).length, 0);
   assert.equal(Object.prototype.toString.call(site.context.dataLayer[0]), "[object Arguments]");
 });
 
@@ -429,17 +430,19 @@ test("completed navigation uses clean canonical URLs and origin-only initial ref
   const site = optedIn({ url: `${origin}/docs/?q=private#secret` });
   site.init();
   site.navigate("/docs/?q=another#different", "/docs/?bad=ignored#ignored");
-  assert.equal(views(site).length, 1);
+  assert.equal(virtualViews(site).length, 0);
   site.document.title = "Authored support title";
   site.navigate("/support/?email=private#token", "/support/");
   site.navigate("/support/#again", "/support/");
-  const events = views(site);
-  assert.equal(events.length, 2);
-  assert.equal(events[0][2].page_location, `${origin}/docs/`);
-  assert.equal(events[0][2].page_referrer, "https://search.example");
-  assert.equal(events[1][2].page_location, `${origin}/support/`);
-  assert.equal(events[1][2].page_referrer, `${origin}/docs/`);
-  assert.equal(events[1][2].page_title, "Authored support title");
+  const events = virtualViews(site);
+  const initial = site.commands().find(([command]) => command === "set")[1];
+  assert.equal(initial.page_location, `${origin}/docs/`);
+  assert.equal(initial.page_referrer, "https://search.example");
+  assert.equal(events.length, 1);
+  assert.equal(events[0][2].page_location, `${origin}/support/`);
+  assert.equal(events[0][2].page_referrer, `${origin}/docs/`);
+  assert.equal(events[0][2].page_title, "Authored support title");
+  assert.equal(site.commands().filter(([command]) => command === "config").length, 1);
   assert.doesNotMatch(JSON.stringify(site.commands()), /private|secret|token|ignored/);
 });
 
@@ -452,15 +455,18 @@ test("unknown, mismatched, foreign and 404 canonicals emit no views", () => {
   ]) {
     const site = optedIn(options);
     site.init();
-    assert.equal(views(site).length, 0);
+    assert.equal(virtualViews(site).length, 0);
     assert.equal(site.scripts.length, 0);
   }
   const index = optedIn({ url: `${origin}/docs/index.html`, canonical: `${origin}/docs/` });
   index.init();
-  assert.equal(views(index)[0][2].page_location, `${origin}/docs/`);
+  assert.equal(
+    index.commands().find(([command]) => command === "set")[1].page_location,
+    `${origin}/docs/`,
+  );
   const noReferrer = optedIn({ referrer: "file:///private/path" });
   noReferrer.init();
-  assert.equal(views(noReferrer)[0][2].page_referrer, "");
+  assert.equal(noReferrer.commands().find(([command]) => command === "set")[1].page_referrer, "");
 });
 
 test("reset and unchecked submission disable immediately before native reload", () => {
@@ -509,7 +515,7 @@ test("another tab withdrawing or clearing storage stops views without Google pin
   unrelated.init();
   unrelated.storage("/.unrelated", false);
   unrelated.navigate("/support/");
-  assert.equal(views(unrelated).length, 2);
+  assert.equal(virtualViews(unrelated).length, 1);
 });
 
 test("expiry uses bounded timers and is rechecked before each view", () => {
@@ -530,7 +536,8 @@ test("expiry uses bounded timers and is rechecked before each view", () => {
   betweenViews.init();
   betweenViews.setNow(timestamp + ttl);
   betweenViews.navigate("/support/");
-  assert.equal(views(betweenViews).length, 1);
+  assert.equal(virtualViews(betweenViews).length, 0);
+  assert.equal(betweenViews.scripts.length, 1);
   assert.equal(betweenViews.record(choiceKey), null);
 });
 
@@ -705,4 +712,39 @@ test("settings-link fallback activates only after failure and tolerates a missin
   const missing = browser({ writeFailure: "silent", missingContainer: true });
   assert.doesNotThrow(() => missing.choose(false));
   assert.equal(missing.clickSettings(), false);
+});
+
+test("failed-storage settings accept native absolute rewrites without consuming other links", () => {
+  const site = browser({ url: `${origin}/docs/?q=local#chapter`, writeFailure: "throw" });
+  site.nativeBootstrap();
+  site.tick();
+  site.choose(false, "reset");
+  const click = (href) =>
+    site.clickSettings({
+      closest(selector) {
+        assert.equal(selector, "a[href]");
+        return { href };
+      },
+    });
+  for (const href of [
+    "https://example.com/docs/?q=local#__consent",
+    "http://boxferry.dev/docs/?q=local#__consent",
+    `${origin}/support/?q=local#__consent`,
+    `${origin}/docs/?q=other#__consent`,
+    `${origin}/docs/?q=local#chapter`,
+    "http://[broken",
+  ]) {
+    assert.equal(click(href), false, href);
+    assert.equal(site.consentContainer.hidden, true);
+  }
+  for (const href of [`${origin}/docs/?q=local#__consent`, "#__consent"]) {
+    assert.equal(click(href), true, href);
+    assert.equal(site.consentContainer.hidden, false);
+    assert.equal(site.context.location.hash, "#__consent");
+    site.choose(false, "reset");
+    assert.equal(site.consentContainer.hidden, true);
+  }
+  assert.equal(site.scripts.length, 0);
+  assert.equal(site.commands().length, 0);
+  assert.equal(site.reloads, 0);
 });

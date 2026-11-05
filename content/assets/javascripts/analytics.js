@@ -227,7 +227,7 @@
       window.gtag("consent", "update", { analytics_storage: "granted" });
       window.gtag("js", new Date());
       window.gtag("config", measurementId, {
-        send_page_view: false,
+        send_page_view: true,
         allow_google_signals: false,
         allow_ad_personalization_signals: false,
         cookie_expires: days * 86400,
@@ -241,8 +241,8 @@
       document.head.appendChild(loader);
     } else {
       window.gtag("set", fields);
+      window.gtag("event", "page_view", fields);
     }
-    window.gtag("event", "page_view", fields);
     previousPage = page;
   }
 
@@ -301,7 +301,20 @@
   // the theme runtime. Reopen its existing container only after a failed choice.
   document.addEventListener("click", (event) => {
     if (!persistenceFailed || typeof event.target?.closest !== "function") return;
-    if (!event.target.closest('a[href="#__consent"]')) return;
+    const link = event.target.closest("a[href]");
+    if (!link) return;
+    try {
+      const target = new URL(link.href, location.href);
+      if (
+        target.origin !== location.origin ||
+        target.pathname !== location.pathname ||
+        target.search !== location.search ||
+        target.hash !== "#__consent"
+      )
+        return;
+    } catch {
+      return;
+    }
     const container = document.querySelector('[data-md-component="consent"]');
     if (!container) return;
     event.preventDefault();
