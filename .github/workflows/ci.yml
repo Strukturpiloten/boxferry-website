@@ -19,7 +19,7 @@ concurrency:
 jobs:
   validation-plan:
     name: Validation plan
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       plan: ${{ steps.plan.outputs.plan }}
@@ -66,7 +66,7 @@ jobs:
     name: Format, lint, test, and build
     needs: validation-plan
     if: needs.validation-plan.outputs.select_quality == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - name: Check out immutable shared automation
@@ -151,7 +151,7 @@ jobs:
     name: Required CI
     if: always()
     needs: [validation-plan, quality, lockfile-release-age]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
       - name: Check out immutable shared automation
