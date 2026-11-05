@@ -377,10 +377,16 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(
             {key: value for key, value in extra.items() if key != "formats"},
             {
-                "contact_url": "https://www.strukturpiloten.de/kontakt",
+                "contact_url": (
+                    "https://www.strukturpiloten.de/kontakt?utm_source=boxferry.dev"
+                    "&utm_medium=referral&utm_campaign=boxferry&utm_content=footer_contact"
+                ),
                 "legal_notice_path": "legal-notice/",
                 "privacy_policy_path": "privacy-policy/",
-                "strukturpiloten_url": "https://www.strukturpiloten.de/",
+                "strukturpiloten_url": (
+                    "https://www.strukturpiloten.de/?utm_source=boxferry.dev"
+                    "&utm_medium=referral&utm_campaign=boxferry&utm_content=header_company"
+                ),
             },
         )
 

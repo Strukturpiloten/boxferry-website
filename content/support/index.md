@@ -18,14 +18,14 @@ report instead of raw production files.
 
 ## Private security reports
 
-Do not publish suspected vulnerabilities in an issue or discussion. Use the
-[Strukturpiloten contact form](https://www.strukturpiloten.de/kontakt) and mark the request as a
-private BoxFerry security report so a secure follow-up channel can be arranged.
+Do not publish suspected vulnerabilities in an issue or discussion.
+[Report a BoxFerry vulnerability privately on GitHub](https://github.com/Strukturpiloten/boxferry/security/advisories/new).
+GitHub sign-in is required. The report opens a private conversation with the maintainers.
 
 ## Professional support
 
 For consulting, integration planning, or paid support, [contact
-Strukturpiloten](https://www.strukturpiloten.de/kontakt). Availability and scope are agreed for each
+Strukturpiloten](https://www.strukturpiloten.de/kontakt?utm_source=boxferry.dev&utm_medium=referral&utm_campaign=boxferry&utm_content=support_professional). Availability and scope are agreed for each
 request.
 
 [Read the documentation](../docs/) · [Return to the homepage](../)

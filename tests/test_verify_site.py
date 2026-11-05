@@ -6,6 +6,7 @@ import json
 import tempfile
 import tomllib
 import unittest
+from html import escape
 from pathlib import Path
 
 from scripts.prepare_deployment import prepare_deployment
@@ -38,7 +39,7 @@ class SiteVerificationTests(unittest.TestCase):
             path = self.site / route
             path.parent.mkdir(parents=True, exist_ok=True)
             links = "".join(
-                f'<a href="{link}"></a>'
+                f'<a href="{escape(link)}"></a>'
                 for link in (*REQUIRED_LINKS, *REQUIRED_SUPPORT_LINKS, SOURCE_MANIFEST_LINK)
             )
             path.write_text(f"<!doctype html><title>BoxFerry</title>{links}\n", encoding="utf-8")
@@ -126,7 +127,7 @@ class SiteVerificationTests(unittest.TestCase):
             f'href="./{item["guide"]}">Input guide</a>'
             for item in formats
         )
-        links = "".join(f'<a href="{link}">Link</a>' for link in REQUIRED_LINKS)
+        links = "".join(f'<a href="{escape(link)}">Link</a>' for link in REQUIRED_LINKS)
         (self.site / "index.html").write_text(
             f'<!doctype html><title>BoxFerry</title><h1 id="__skip">Convert</h1>'
             f"<ul>{chips}</ul>{guides}{links}",
@@ -255,23 +256,52 @@ class SiteVerificationTests(unittest.TestCase):
 
     def test_missing_required_link_fails(self) -> None:
         homepage = self.site / "index.html"
-        homepage.write_text(
-            homepage.read_text(encoding="utf-8").replace(f'href="{REQUIRED_LINKS[-1]}"', 'href=""'),
-            encoding="utf-8",
-        )
-
-        with self.assertRaisesRegex(SiteVerificationError, "required public links are missing"):
-            verify_site(self.site)
+        original = homepage.read_text(encoding="utf-8")
+        for link in REQUIRED_LINKS:
+            with self.subTest(link=link):
+                homepage.write_text(
+                    original.replace(f'href="{escape(link)}"', 'href=""'),
+                    encoding="utf-8",
+                )
+                with self.assertRaisesRegex(
+                    SiteVerificationError, "required public links are missing"
+                ):
+                    verify_site(self.site)
 
     def test_missing_support_link_fails(self) -> None:
         support = self.site / "support" / "index.html"
-        support.write_text(
-            support.read_text(encoding="utf-8").replace(REQUIRED_SUPPORT_LINKS[0], ""),
-            encoding="utf-8",
-        )
+        original = support.read_text(encoding="utf-8")
+        for link in REQUIRED_SUPPORT_LINKS:
+            with self.subTest(link=link):
+                support.write_text(original.replace(escape(link), ""), encoding="utf-8")
+                with self.assertRaisesRegex(
+                    SiteVerificationError, "required support links are missing"
+                ):
+                    verify_site(self.site)
 
-        with self.assertRaisesRegex(SiteVerificationError, "required support links are missing"):
-            verify_site(self.site)
+    def test_escaped_anchor_text_does_not_satisfy_required_links(self) -> None:
+        cases = (
+            ("index.html", REQUIRED_LINKS[1], "required public links are missing"),
+            (
+                "support/index.html",
+                REQUIRED_SUPPORT_LINKS[2],
+                "required support links are missing",
+            ),
+        )
+        for route, link, message in cases:
+            with self.subTest(route=route):
+                page = self.site / route
+                original = page.read_text(encoding="utf-8")
+                page.write_text(
+                    original.replace(f'href="{escape(link)}"', 'data-disabled-link=""')
+                    + escape(f'<a href="{link}">Displayed example</a>'),
+                    encoding="utf-8",
+                )
+                try:
+                    with self.assertRaisesRegex(SiteVerificationError, message):
+                        verify_site(self.site)
+                finally:
+                    page.write_text(original, encoding="utf-8")
 
     def test_missing_source_metadata_link_fails(self) -> None:
         sources = self.site / "docs" / "sources" / "index.html"
