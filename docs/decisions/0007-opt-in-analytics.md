@@ -1,6 +1,6 @@
 # 0007: Native consent and optional Google Analytics
 
-- Status: Accepted
+- Status: Accepted; initial page-view ownership amended by [0008](0008-initial-and-navigation-analytics.md)
 - Date: 2026-11-05
 - Amends: browser policy in [0003](0003-hetzner-atomic-static-deployment.md)
 
@@ -25,13 +25,15 @@ owned navigation work and removes accessible GA cookies, including across tabs. 
 sends no Google tag or consent ping; use basic consent gating.
 
 Use the correct hosted `/gtag/js` service for `G-TX06VP39B2`, never a GTM container. Deny advertising
-consent and disable Google Signals and advertising personalization. Send manual page views only
-on completed native navigation, using same-origin published canonical URLs without queries or
-fragments, authored titles and an origin-only initial referrer. Do not collect local search or
+consent and disable Google Signals and advertising personalization. Page views use same-origin
+published canonical URLs without queries or fragments, authored titles and an origin-only initial
+referrer. The original manual-initial-view rule is superseded by
+[0008](0008-initial-and-navigation-analytics.md): Google owns the initial configuration view and
+manual events own subsequent completed native navigation. Do not collect local search or
 form contents. Keep Enhanced Measurement disabled in the property to avoid independent events.
 No cross-domain visitor linking is configured; existing referral UTM links remain ordinary links.
 
-Collection remains disabled until the maintainer confirms Enhanced Measurement, Google Signals,
+Collection was held disabled until the maintainer confirmed Enhanced Measurement, Google Signals,
 advertising personalization and optional Google-products sharing are off. Document Google
 processing, international transfers, withdrawal and the confirmed event/user retention settings
 of 2/14 months in the privacy policy. Account agreements and hosting facts still require the

@@ -53,11 +53,18 @@ set no Analytics cookies and send no Analytics measurements or consent pings. Re
 restrict the website.
 
 With consent, Analytics can process pseudonymous cookie identifiers, published page addresses and
-titles, referring website origins, and technical browser/device and approximate-location data.
+titles, referring website origins, and location/device data. Detailed collection is enabled,
+including city-level location, screen resolution, browser and operating-system versions, and
+device brand/model information.
 Google also receives your IP address when your browser contacts its servers.
 Our integration removes address queries and fragments and does not send search terms or form
 contents. It disables Google Signals and advertising personalization and denies advertising
 storage and advertising-data consent. We do not configure cross-domain visitor linking.
+
+Google tag automatic-event detection and user-provided-data capabilities remain enabled.
+Property-level collection of user-provided data is disabled, and advertising-data consent stays
+denied. We do not configure submission of entered email addresses, telephone numbers or postal
+addresses. The tag and property settings have different scopes.
 
 The first-party cookies `_ga` and `_ga_TX06VP39B2` distinguish browsers and sessions. We configure
 them for up to 180 days without extending expiry on each visit; browsers may expire them sooner.
