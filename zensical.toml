@@ -137,10 +137,10 @@ shadowed_definitions = true
 shadowed_footnotes = true
 
 [project.extra]
-contact_url = "https://www.strukturpiloten.de/kontakt"
+contact_url = "https://www.strukturpiloten.de/kontakt?utm_source=boxferry.dev&utm_medium=referral&utm_campaign=boxferry&utm_content=footer_contact"
 legal_notice_path = "legal-notice/"
 privacy_policy_path = "privacy-policy/"
-strukturpiloten_url = "https://www.strukturpiloten.de/"
+strukturpiloten_url = "https://www.strukturpiloten.de/?utm_source=boxferry.dev&utm_medium=referral&utm_campaign=boxferry&utm_content=header_company"
 
 # Only formats with published support and input guides belong in this list.
 # Both the homepage diagram and guide entries are rendered from these records.

@@ -21,6 +21,20 @@ Keep `navigation.tabs` and `navigation.tabs.sticky` out of the theme `features` 
 features render top-level navigation in a separate row below the header instead of beside the
 BoxFerry identity.
 
+## Company referrals and private security reports
+
+The company icon and footer Contact link use `project.extra.strukturpiloten_url` and
+`project.extra.contact_url` in `zensical.toml`. The professional-support link belongs to
+`content/support/index.md`.
+
+Company links use `utm_source=boxferry.dev`, `utm_medium=referral` and `utm_campaign=boxferry`.
+Distinguish placements with `utm_content=header_company`, `footer_contact` or
+`support_professional`. These static labels contain no visitor identifier and load no Analytics
+script. Keep email links unchanged.
+
+Suspected BoxFerry vulnerabilities go directly to GitHub's private reporting form, not the company
+contact form. Keep that security-reporting link free of campaign parameters.
+
 ## Change the homepage and supported formats
 
 `content/index.md` selects `overrides/home.html` and retains the command example. The homepage

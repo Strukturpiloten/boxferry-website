@@ -90,16 +90,20 @@ REQUIRED_ASSETS = (
 )
 REQUIRED_LINKS = (
     "https://github.com/Strukturpiloten/boxferry",
-    "https://www.strukturpiloten.de/",
+    "https://www.strukturpiloten.de/?utm_source=boxferry.dev&utm_medium=referral"
+    "&utm_campaign=boxferry&utm_content=header_company",
     "./legal-notice/",
     "./privacy-policy/",
-    "https://www.strukturpiloten.de/kontakt",
+    "https://www.strukturpiloten.de/kontakt?utm_source=boxferry.dev&utm_medium=referral"
+    "&utm_campaign=boxferry&utm_content=footer_contact",
     "./docs/guides/",
 )
 REQUIRED_SUPPORT_LINKS = (
     "https://github.com/Strukturpiloten/boxferry/discussions",
     "https://github.com/Strukturpiloten/boxferry/issues/new/choose",
-    "https://www.strukturpiloten.de/kontakt",
+    "https://github.com/Strukturpiloten/boxferry/security/advisories/new",
+    "https://www.strukturpiloten.de/kontakt?utm_source=boxferry.dev&utm_medium=referral"
+    "&utm_campaign=boxferry&utm_content=support_professional",
 )
 SOURCE_MANIFEST_LINK = "https://boxferry.dev/assets/data/documentation-sources.json"
 FORBIDDEN_FRAGMENTS = (
@@ -127,6 +131,20 @@ SOURCE_REPOSITORIES = (
 
 class SiteVerificationError(RuntimeError):
     """Describe an incomplete or privacy-unsafe static site."""
+
+
+class _LinkTargets(HTMLParser):
+    """Collect actual anchor targets, decoding attribute entities without decoding markup."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.targets: set[str] = set()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "a":
+            href = dict(attrs).get("href")
+            if href is not None:
+                self.targets.add(href)
 
 
 class _HomepageFormats(HTMLParser):
@@ -284,16 +302,18 @@ def verify_site(site_directory: Path) -> None:
         formats = tomllib.load(handle)["project"]["extra"]["formats"]
     _verify_homepage_formats(site, formats)
 
-    homepage = (site / "index.html").read_text(encoding="utf-8")
-    missing_links = [link for link in REQUIRED_LINKS if f'href="{link}"' not in homepage]
+    homepage_links = _LinkTargets()
+    homepage_links.feed((site / "index.html").read_text(encoding="utf-8"))
+    missing_links = [link for link in REQUIRED_LINKS if link not in homepage_links.targets]
     if missing_links:
         raise SiteVerificationError(
             f"required public links are missing: {', '.join(missing_links)}"
         )
 
-    support = (site / "support" / "index.html").read_text(encoding="utf-8")
+    support_links = _LinkTargets()
+    support_links.feed((site / "support" / "index.html").read_text(encoding="utf-8"))
     missing_support_links = [
-        link for link in REQUIRED_SUPPORT_LINKS if f'href="{link}"' not in support
+        link for link in REQUIRED_SUPPORT_LINKS if link not in support_links.targets
     ]
     if missing_support_links:
         raise SiteVerificationError(
