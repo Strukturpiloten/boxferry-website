@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "repository": "Strukturpiloten/boxferry",
-  "revision": "2d9243aa7021b51be319616ea99732c371c4a22d",
+  "revision": "b191fb5ffe32fe84d9cb0c851562044b0f0cc59b",
   "policy": "scripts/validation-policy.json",
   "interface": 1
 }
