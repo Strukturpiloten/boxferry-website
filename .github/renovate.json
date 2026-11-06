@@ -6,14 +6,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update explicitly pinned Node setup versions",
-      "managerFilePatterns": ["/^\\.github/workflows/.*\\.yml$/"],
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)\\n\\s+node-version: (?<currentValue>[^\\s]+)"
-      ]
-    },
-    {
-      "customType": "regex",
       "description": "Poll documentation source main branches",
       "managerFilePatterns": ["/^documentation-sources\\.toml$/"],
       "matchStrings": [
