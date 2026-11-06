@@ -38,8 +38,8 @@ privacy and dependency decision before addition.
 
 The immutable common preset in `.github/renovate.json` owns automatic dependency PRs, the 72-hour
 third-party hold, Python package declarations and lock maintenance. Canonical uv, Ruff and ty execution lives only
-in the shared implementation; the website lock contains its site and workflow-audit dependencies. Local rules own the website's native
-installer, Node setup and exact documentation-source revisions once. Documentation-source updates
+in the shared implementation; the website lock contains its site and workflow-audit dependencies. The shared inventory owns downloaded tools. The native GitHub Actions manager owns each
+explicit Node setup version once; local rules own exact documentation-source revisions. Documentation-source updates
 are first-party updates; isolated published first-party PRs and necessary transitive resolution
 have no age hold. Mixed third-party changes retain the ordinary policy.
 
@@ -52,6 +52,26 @@ validation gate and the reusable publisher in [ADR 0006](decisions/0006-validate
 rebuild path. It is historical evidence, not an active upgrade pin: no Renovate manager extracts
 it. The legacy version is read from the approved source's original TOML declaration; new sources
 use their own canonical shared revision. See the deployment runbook.
+
+## Native Node ownership check
+
+The CI and deployment Node inputs use the native `github-actions` `uses-with` owner. Do not
+mirror them with a custom regex. Their existing versions and the ordinary three-day admission,
+GitHub Actions grouping, integrity and automatic-merge rules remain unchanged.
+
+For the explicit native regression, set `BOXFERRY_RENOVATE_PACKAGE` to an already verified
+cache of the exact image in the selected automation's `automation/renovate-runtime.json`, then run:
+
+```console
+python3 scripts/shared-ci.py run --task native-node-ownership
+```
+
+This path refuses a missing or foreign cache and permits only Node verification commands. It
+performs actual frozen config composition, extraction and effective-rule checks without network
+lookups, updates or engines. Duplicate and missing Node owners, changed routine approvals and a
+missing documentation-source owner are negative controls. Ordinary Python quality and unit tests
+remain deterministic and require no native cache. This focused check does not replace the complete
+gate or authorize merging, publication or deployment.
 
 ## Same-commit website publisher
 
