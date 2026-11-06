@@ -8,7 +8,7 @@ dependencies = []
 [dependency-groups]
 dev = [
   "zensical==0.0.74",
-  "zizmor==1.31.1",
+  "zizmor==1.32.0",
 ]
 
 [tool.ruff]
