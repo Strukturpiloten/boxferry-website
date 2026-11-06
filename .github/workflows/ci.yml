@@ -32,7 +32,7 @@ jobs:
         with:
           repository: Strukturpiloten/boxferry
           # renovate: datasource=github-digest depName=Strukturpiloten/boxferry currentValue=automation-v1
-          ref: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          ref: 2d9243aa7021b51be319616ea99732c371c4a22d
           path: _automation
           persist-credentials: false
       - name: Hold the exact candidate and trusted base policy
@@ -40,7 +40,7 @@ jobs:
         uses: ./_automation/.github/actions/shared-source # zizmor: ignore[self-repository] -- External SHA-pinned BoxFerry checkout; $/ would select this website repository.
         with:
           candidate-sha: ${{ github.sha }}
-          automation-sha: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          automation-sha: 2d9243aa7021b51be319616ea99732c371c4a22d
           policy-sha: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
           config-path: scripts/validation-policy.json
       - name: Install canonical locked Python tooling
@@ -53,7 +53,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
           POLICY_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
-          AUTOMATION_SHA: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          AUTOMATION_SHA: 2d9243aa7021b51be319616ea99732c371c4a22d
         run: |
           uv run --locked --project _automation/automation python -m boxferry_ci plan \
             --repository-root source --config "${CONFIG}" \
@@ -74,7 +74,7 @@ jobs:
         with:
           repository: Strukturpiloten/boxferry
           # renovate: datasource=github-digest depName=Strukturpiloten/boxferry currentValue=automation-v1
-          ref: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          ref: 2d9243aa7021b51be319616ea99732c371c4a22d
           path: _automation
           persist-credentials: false
       - name: Hold the exact candidate and trusted base policy
@@ -82,7 +82,7 @@ jobs:
         uses: ./_automation/.github/actions/shared-source # zizmor: ignore[self-repository] -- External SHA-pinned BoxFerry checkout; $/ would select this website repository.
         with:
           candidate-sha: ${{ github.sha }}
-          automation-sha: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          automation-sha: 2d9243aa7021b51be319616ea99732c371c4a22d
           policy-sha: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
           config-path: scripts/validation-policy.json
       - name: Install canonical locked Python tooling
@@ -113,7 +113,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
           POLICY_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
-          AUTOMATION_SHA: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          AUTOMATION_SHA: 2d9243aa7021b51be319616ea99732c371c4a22d
           BOXFERRY_WEBSITE_FORMAT_MODE: check
           BOXFERRY_WEBSITE_SOURCE_MODE: locked
         run: |
@@ -141,10 +141,10 @@ jobs:
       contents: read
       actions: read
       statuses: read
-    uses: Strukturpiloten/boxferry/.github/workflows/shared-dependency-wait.yml@e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04 # automation-v1 interface v1
+    uses: Strukturpiloten/boxferry/.github/workflows/shared-dependency-wait.yml@2d9243aa7021b51be319616ea99732c371c4a22d # automation-v1 interface v1
     with:
       candidate_sha: ${{ github.sha }}
-      automation_sha: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+      automation_sha: 2d9243aa7021b51be319616ea99732c371c4a22d
       policy_sha: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
 
   pr-gate:
@@ -159,7 +159,7 @@ jobs:
         with:
           repository: Strukturpiloten/boxferry
           # renovate: datasource=github-digest depName=Strukturpiloten/boxferry currentValue=automation-v1
-          ref: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          ref: 2d9243aa7021b51be319616ea99732c371c4a22d
           path: _automation
           persist-credentials: false
       - name: Hold the exact candidate and trusted base policy
@@ -167,7 +167,7 @@ jobs:
         uses: ./_automation/.github/actions/shared-source # zizmor: ignore[self-repository] -- External SHA-pinned BoxFerry checkout; $/ would select this website repository.
         with:
           candidate-sha: ${{ github.sha }}
-          automation-sha: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          automation-sha: 2d9243aa7021b51be319616ea99732c371c4a22d
           policy-sha: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
           config-path: scripts/validation-policy.json
       - name: Install canonical locked Python tooling
@@ -179,7 +179,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
           POLICY_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
-          AUTOMATION_SHA: e1e2980fcdd1c4a90b5672d23402d9f0bdd0fa04
+          AUTOMATION_SHA: 2d9243aa7021b51be319616ea99732c371c4a22d
           PLAN_JSON: ${{ needs.validation-plan.outputs.plan }}
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
