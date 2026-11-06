@@ -2,6 +2,7 @@
   max-width: 1620px;
 }
 .md-consent__overlay {
+  background: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
