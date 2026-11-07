@@ -67,17 +67,18 @@ permissions:
   statuses: write
 jobs:
   eligibility:
+    name: Trusted dependency metadata
+    if: >-
+      github.event_name == 'schedule' || \
+(github.event_name == 'workflow_run' && \
+(github.event.workflow_run.event == 'pull_request' || \
+github.event.workflow_run.event == 'merge_group'))
     permissions:
       actions: write
       checks: read
       contents: read
       pull-requests: write
       statuses: write
-    if: >-
-      github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_run' &&
-      (github.event.workflow_run.event == 'pull_request' ||
-      github.event.workflow_run.event == 'merge_group'))
     uses: Strukturpiloten/boxferry/.github/workflows/shared-dependency-eligibility.yml@{revision}
     with:
       automation-sha: {revision}
