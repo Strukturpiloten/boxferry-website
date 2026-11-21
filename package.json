@@ -7,8 +7,8 @@
     "node": ">=22.18.0"
   },
   "devDependencies": {
-    "cspell": "10.4.0",
-    "markdownlint-cli2": "0.24.0",
-    "prettier": "3.9.10"
+    "cspell": "10.5.2",
+    "markdownlint-cli2": "0.24.1",
+    "prettier": "3.10.1"
   }
 }
