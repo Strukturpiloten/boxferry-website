@@ -60,6 +60,7 @@ on:
     types: [requested, completed]
   schedule:
     - cron: "17 * * * *"
+cache-mode: none
 permissions:
   actions: write
   contents: read
@@ -600,6 +601,11 @@ class RepositoryPolicyTests(unittest.TestCase):
             )
         mutations = (
             *permission_mutations,
+            source.replace("cache-mode: none\n", "", 1),
+            source.replace("cache-mode: none", "cache-mode: read", 1),
+            source.replace("cache-mode: none\n", "", 1).replace(
+                "  eligibility:\n", "  eligibility:\n    cache-mode: none\n", 1
+            ),
             source.replace("on:", "on:\n  push:", 1),
             source.replace("workflows: [CI]", "workflows: [Release]"),
             source.replace("[requested, completed]", "[in_progress, completed]"),
