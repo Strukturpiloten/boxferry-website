@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>Strukturpiloten/boxferry//renovate-presets/common#b2e07985372159a7c522addbfba8e9b79200c332"
+    "github>Strukturpiloten/boxferry//renovate-presets/common#cf3578f47416e1b27b770fe4a81918844fb2d58b"
   ],
   "customManagers": [
     {
