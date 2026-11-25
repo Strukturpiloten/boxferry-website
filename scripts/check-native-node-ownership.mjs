@@ -255,7 +255,7 @@ for (const [label, dependency, expectedAge] of [
   ],
   [
     "ordinary Node package",
-    { manager: "npm", datasource: "npm", packageName: "prettier", packageFile: "package.json" },
+    { manager: "npm", datasource: "npm", packageName: "cspell", packageFile: "package.json" },
     "3 days",
   ],
   [

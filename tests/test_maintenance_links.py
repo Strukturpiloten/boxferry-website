@@ -22,6 +22,7 @@ class MaintenanceLinkTests(unittest.TestCase):
             scripts.mkdir()
             for filename in ("check-maintenance-docs.sh", "validation-policy.json"):
                 shutil.copyfile(ROOT / "scripts" / filename, scripts / filename)
+            (scripts / "shared-ci.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
             shutil.copyfile(ROOT / "lychee.toml", repository / "lychee.toml")
 
             policy = json.loads((scripts / "validation-policy.json").read_text(encoding="utf-8"))

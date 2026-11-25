@@ -35,7 +35,7 @@ def validate(root: Path, automation: Path, configuration: Path | None = None) ->
                 raise AssertionError("historical uv integrity became an automatic upgrade target")
     cases = (
         ("pep621", "pypi", "zensical", "pyproject.toml", "3 days"),
-        ("npm", "npm", "prettier", "package.json", "3 days"),
+        ("npm", "npm", "cspell", "package.json", "3 days"),
         (
             "custom.regex",
             "git-refs",
