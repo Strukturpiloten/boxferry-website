@@ -107,3 +107,27 @@ Use `./scripts/check-all.sh --check` to run the complete gate without formatting
 files. The default command (or `--fix`) still formats first. Both modes run the same validation;
 ignored caches and build artifacts may change. Verifiers report failures without fixing files,
 and the primary agent owns the final complete gate and merges covered by the workspace standing authorization in `AGENTS.md`.
+
+## Shared formatters
+
+Prettier and markdownlint-cli2 use the same immutable automation revision as the other
+shared tasks. The website owns its configuration, ignores, file inventories and expected
+results. cspell remains in the website npm manifest and native lockfile. Ordinary CI uses
+the same full, maintenance and public-prose scripts as local validation.
+
+For an individual file, run from the website checkout:
+
+```console
+python3 scripts/shared-ci.py node-tool --cwd "$PWD" prettier --config "$PWD/.prettierrc.json" --ignore-path "$PWD/.prettierignore" --check README.md
+python3 scripts/shared-ci.py node-tool --cwd "$PWD" markdownlint-cli2 --config "$PWD/.markdownlint.json" :README.md
+```
+
+Use Prettier's `--write` or markdownlint-cli2's `--fix` to apply corrections. The shared
+launcher installs locked tools without relying on formatter executables on PATH. There is
+no website-owned container image; the BoxFerry workspace image is maintained by its producer.
+The initial migration needs the admitted producer revision before these commands can run;
+routine upgrades use the existing grouped automation update.
+
+Production deployment also invokes the complete validation script. Its historical rebuild
+path installs the selected source's native npm lock; admission must account for that coupling.
+Changing ordinary formatter wiring does not authorize publication or a deployment workflow change.

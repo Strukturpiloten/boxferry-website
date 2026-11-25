@@ -644,7 +644,7 @@ class RepositoryPolicyTests(unittest.TestCase):
         lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
 
         configured_pins = exact_node_pins(package["devDependencies"])
-        self.assertEqual(set(configured_pins), {"cspell", "markdownlint-cli2", "prettier"})
+        self.assertEqual(set(configured_pins), {"cspell"})
 
         locked_pins = exact_node_pins(lock["packages"][""]["devDependencies"])
         self.assertEqual(locked_pins, configured_pins)

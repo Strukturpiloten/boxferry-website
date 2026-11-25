@@ -80,7 +80,7 @@ run_step() {
 run_step "Install locked repository tools" npm ci --ignore-scripts
 run_step "Synchronize the locked Python environment" uv sync --locked
 
-required_tools=(actionlint cspell git hadolint jq lychee markdownlint-cli2 prettier shellcheck shfmt tombi)
+required_tools=(actionlint cspell git hadolint jq lychee shellcheck shfmt tombi)
 missing_tools=()
 for tool in "${required_tools[@]}"; do
   if ! command -v "${tool}" > /dev/null 2>&1; then

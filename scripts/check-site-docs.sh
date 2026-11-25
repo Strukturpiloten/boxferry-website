@@ -44,8 +44,8 @@ if ((${#markdown_files[@]} == 0)); then
   exit 2
 fi
 
-prettier --check --ignore-path .prettierignore --ignore-unknown "${markdown_files[@]}"
-markdownlint-cli2 "${markdown_files[@]/#/:}"
+python3 scripts/shared-ci.py node-tool --cwd "${repository_root}" prettier --config "${repository_root}/.prettierrc.json" --check --ignore-path "${repository_root}/.prettierignore" --ignore-unknown "${markdown_files[@]}"
+python3 scripts/shared-ci.py node-tool --cwd "${repository_root}" markdownlint-cli2 --config "${repository_root}/.markdownlint.json" "${markdown_files[@]/#/:}"
 cspell --config cspell.json --no-progress --no-summary -- "${markdown_files[@]}"
 lychee --config lychee.toml --root-dir . --offline "${source_links[@]}"
 uv run --frozen python scripts/assemble_docs.py --source-mode "${source_mode}"

@@ -19,6 +19,13 @@ class SiteDocumentationTests(unittest.TestCase):
         self.root = Path(temporary.name)
         (self.root / "scripts").mkdir()
         shutil.copy2(ROOT / "scripts/check-site-docs.sh", self.root / "scripts")
+        (self.root / "scripts/shared-ci.py").write_text(
+            "import os, sys\n"
+            "command = 'python3 scripts/shared-ci.py ' + ' '.join(sys.argv[1:])\n"
+            "with open(os.environ['TASK_LOG'], 'a') as output: output.write(command + '\\n')\n"
+            "sys.exit(17 if command == os.environ.get('FAIL_COMMAND') else 0)\n",
+            encoding="utf-8",
+        )
         (self.root / "README.md").write_text("# Documentation\n", encoding="utf-8")
         self.bin = self.root / "bin"
         self.bin.mkdir()
@@ -78,3 +85,21 @@ class SiteDocumentationTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 17)
         self.assertNotIn("zensical", self.log.read_text(encoding="utf-8"))
+
+    def test_shared_formatter_failures_stop_before_assembly(self) -> None:
+        for tool, arguments in (
+            (
+                "prettier",
+                f"--config {self.root}/.prettierrc.json --check "
+                f"--ignore-path {self.root}/.prettierignore --ignore-unknown README.md",
+            ),
+            ("markdownlint-cli2", f"--config {self.root}/.markdownlint.json :README.md"),
+        ):
+            with self.subTest(tool=tool):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(
+                    FAIL_COMMAND=f"python3 scripts/shared-ci.py node-tool --cwd {self.root} "
+                    f"{tool} {arguments}"
+                )
+                self.assertEqual(result.returncode, 17)
+                self.assertNotIn("assemble_docs", self.log.read_text(encoding="utf-8"))

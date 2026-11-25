@@ -32,8 +32,8 @@ fi
 
 npm ci --ignore-scripts
 export PATH="${repository_root}/node_modules/.bin:${PATH}"
-prettier --check --ignore-path .prettierignore --ignore-unknown "${maintenance_docs[@]}"
-markdownlint-cli2 "${maintenance_docs[@]/#/:}"
+python3 scripts/shared-ci.py node-tool --cwd "${repository_root}" prettier --config "${repository_root}/.prettierrc.json" --check --ignore-path "${repository_root}/.prettierignore" --ignore-unknown "${maintenance_docs[@]}"
+python3 scripts/shared-ci.py node-tool --cwd "${repository_root}" markdownlint-cli2 --config "${repository_root}/.markdownlint.json" "${maintenance_docs[@]/#/:}"
 cspell --config cspell.json --no-progress --no-summary -- "${maintenance_docs[@]}"
 lychee --config lychee.toml --root-dir . --offline "${maintenance_docs[@]}"
 git --no-pager diff --check
