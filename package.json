@@ -7,6 +7,6 @@
     "node": ">=22.18.0"
   },
   "devDependencies": {
-    "cspell": "10.4.0"
+    "cspell": "10.5.2"
   }
 }
